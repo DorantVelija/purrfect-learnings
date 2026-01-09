@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "oLmZ7dW9xJU=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\Dorant\\RiderProjects\\Purrfect-Learnings\\Purrfect-Learnings\\Purrfect-Learnings.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Dorant\\.nuget\\packages\\microsoft.aspnetcore.openapi\\9.0.11\\microsoft.aspnetcore.openapi.9.0.11.nupkg.sha512",
+    "C:\\Users\\Dorant\\.nuget\\packages\\microsoft.openapi\\1.6.17\\microsoft.openapi.1.6.17.nupkg.sha512"
+  ],
+  "logs": []
+}
