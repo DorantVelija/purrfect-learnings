@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Dorant\\RiderProjects\\Purrfect-Learnings\\Purrfect-Learnings\\Purrfect-Learnings.csproj": {}
+    "C:\\Users\\Dorant\\Desktop\\purrfect-learnings\\backend\\Purrfect-Learnings\\Purrfect-Learnings.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Dorant\\RiderProjects\\Purrfect-Learnings\\Purrfect-Learnings\\Purrfect-Learnings.csproj": {
+    "C:\\Users\\Dorant\\Desktop\\purrfect-learnings\\backend\\Purrfect-Learnings\\Purrfect-Learnings.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Dorant\\RiderProjects\\Purrfect-Learnings\\Purrfect-Learnings\\Purrfect-Learnings.csproj",
+        "projectUniqueName": "C:\\Users\\Dorant\\Desktop\\purrfect-learnings\\backend\\Purrfect-Learnings\\Purrfect-Learnings.csproj",
         "projectName": "Purrfect-Learnings",
-        "projectPath": "C:\\Users\\Dorant\\RiderProjects\\Purrfect-Learnings\\Purrfect-Learnings\\Purrfect-Learnings.csproj",
+        "projectPath": "C:\\Users\\Dorant\\Desktop\\purrfect-learnings\\backend\\Purrfect-Learnings\\Purrfect-Learnings.csproj",
         "packagesPath": "C:\\Users\\Dorant\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Dorant\\RiderProjects\\Purrfect-Learnings\\Purrfect-Learnings\\obj\\",
+        "outputPath": "C:\\Users\\Dorant\\Desktop\\purrfect-learnings\\backend\\Purrfect-Learnings\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Dorant\\AppData\\Roaming\\NuGet\\NuGet.Config"

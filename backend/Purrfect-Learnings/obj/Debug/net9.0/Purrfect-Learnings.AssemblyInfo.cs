@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Purrfect-Learnings")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+273d754190e254b3c7926f8d857e04f04c6fe20c")]
 [assembly: System.Reflection.AssemblyProductAttribute("Purrfect-Learnings")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Purrfect-Learnings")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
