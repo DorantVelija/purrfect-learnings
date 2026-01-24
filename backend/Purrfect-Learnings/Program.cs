@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using PurrfectLearnings.Data;
+using Purrfect_Learnings.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
