@@ -1145,19 +1145,19 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\Dorant\\.nuget\\packages\\": {}
+    "/Users/dorantvelija/.nuget/packages/": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Dorant\\Desktop\\purrfect-learnings\\backend\\Purrfect-Learnings\\Purrfect-Learnings.csproj",
+      "projectUniqueName": "/Users/dorantvelija/Desktop/purrfect-learnings/purrfect-learnings/backend/Purrfect-Learnings/Purrfect-Learnings.csproj",
       "projectName": "Purrfect-Learnings",
-      "projectPath": "C:\\Users\\Dorant\\Desktop\\purrfect-learnings\\backend\\Purrfect-Learnings\\Purrfect-Learnings.csproj",
-      "packagesPath": "C:\\Users\\Dorant\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Dorant\\Desktop\\purrfect-learnings\\backend\\Purrfect-Learnings\\obj\\",
+      "projectPath": "/Users/dorantvelija/Desktop/purrfect-learnings/purrfect-learnings/backend/Purrfect-Learnings/Purrfect-Learnings.csproj",
+      "packagesPath": "/Users/dorantvelija/.nuget/packages/",
+      "outputPath": "/Users/dorantvelija/Desktop/purrfect-learnings/purrfect-learnings/backend/Purrfect-Learnings/obj/",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\Dorant\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "/Users/dorantvelija/.nuget/NuGet/NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net9.0"
@@ -1223,7 +1223,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Users\\Dorant\\.dotnet\\sdk\\9.0.308/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/9.0.308/PortableRuntimeIdentifierGraph.json"
       }
     }
   },
