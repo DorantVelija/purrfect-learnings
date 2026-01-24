@@ -11,6 +11,7 @@ public class User
 {
     public int UserId { get; set; }
     public string Name { get; set; }
+    public string Email { get; set; }
     public Role Role { get; set; }
     public string? ProfilePictureUrl { get; set; }
     
@@ -28,5 +29,5 @@ public class UserCourse
     public User User { get; set; }
     
     public Role Role { get; set; }
-    public DateTime JoinedAt { get; set; }
+    public DateTime JoinedAt { get; set; } = DateTime.UtcNow;
 }

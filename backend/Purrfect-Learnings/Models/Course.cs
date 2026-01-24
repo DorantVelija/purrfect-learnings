@@ -8,8 +8,9 @@ public class Course
     public DateTime Created { get; set; }
     public DateTime Updated { get; set; }
     
-    // for naviation
+    // for navigation
     public ICollection<UserCourse> Users { get; set; } = new List<UserCourse>();
+    
 }
 
 public class Assignment
@@ -21,7 +22,7 @@ public class Assignment
     public int CourseId { get; set; }
     public Course Course { get; set; }
     
-    // for naviation
+    // for navigation
     public ICollection<AssignmentUser> AssignmentUsers { get; set; } = new List<AssignmentUser>();
     public DateTime Created { get; set; }
     public DateTime Updated { get; set; }

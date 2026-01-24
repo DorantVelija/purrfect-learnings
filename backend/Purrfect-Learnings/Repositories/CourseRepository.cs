@@ -10,6 +10,8 @@ public interface ICourseRepository
     Task<Course> CreateAsync(CreateCourseDto dto);
     Task<bool> DeleteAsync(int id);
     Task<Course> UpdateAsync(int id, UpdateCourseDto dto);
+    Task<IEnumerable<Course>> GetAllAsync();
+    Task<Course> GetByIdAsync(int id);
 }
 
 public class CourseRepository : ICourseRepository
@@ -20,7 +22,7 @@ public class CourseRepository : ICourseRepository
     {
         _context = context;
     }
-    
+
     public async Task<Course> CreateAsync(CreateCourseDto dto)
     {
         var course = new Course
@@ -152,5 +154,19 @@ public class CourseRepository : ICourseRepository
 
         await _context.SaveChangesAsync();
         return course;
+    }
+
+    public async Task<IEnumerable<Course>> GetAllAsync()
+    {
+        return await _context.Courses
+            .Include(c => c.Users)
+            .ToListAsync();
+    }
+
+    public async Task<Course> GetByIdAsync(int id)
+    {
+        return await _context.Courses
+            .Include(c => c.Users)
+            .FirstOrDefaultAsync(c => c.Id == id);
     }
 }
