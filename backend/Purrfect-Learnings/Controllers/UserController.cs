@@ -3,11 +3,13 @@ using Microsoft.EntityFrameworkCore;
 using Purrfect_Learnings.Data;
 using Purrfect_Learnings.DTOs;
 using Purrfect_Learnings.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Purrfect_Learnings.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class UserController : ControllerBase
 {
     private readonly AppDbContext _context;
@@ -19,6 +21,7 @@ public class UserController : ControllerBase
 
     // GET: api/user
     [HttpGet]
+    [Authorize(Roles = "Teacher")]
     public async Task<IActionResult> GetAll()
     {
         var users = await _context.Users.ToListAsync();
@@ -27,6 +30,7 @@ public class UserController : ControllerBase
 
     // GET: api/user/{id}
     [HttpGet("{id}")]
+    [Authorize(Roles = "Teacher")]
     public async Task<IActionResult> GetById(int id)
     {
         var user = await _context.Users.FindAsync(id);
@@ -39,6 +43,7 @@ public class UserController : ControllerBase
 
     // POST: api/user
     [HttpPost]
+    [Authorize(Roles = "Teacher")]
     public async Task<IActionResult> Create([FromBody] CreateUserDto dto)
     {
         if (!ModelState.IsValid)
@@ -63,6 +68,7 @@ public class UserController : ControllerBase
 
     // PUT: api/user/{id}
     [HttpPut("{id}")]
+    [Authorize(Roles = "Teacher")]
     public async Task<IActionResult> Update(int id, [FromBody] CreateUserDto dto)
     {
         var user = await _context.Users.FindAsync(id);
@@ -80,6 +86,7 @@ public class UserController : ControllerBase
 
     // DELETE: api/user/{id}
     [HttpDelete("{id}")]
+    [Authorize(Roles = "Teacher")]
     public async Task<IActionResult> Delete(int id)
     {
         var user = await _context.Users.FindAsync(id);

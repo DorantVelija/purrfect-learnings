@@ -3,11 +3,13 @@ using Purrfect_Learnings.Repositories;
 using Purrfect_Learnings.DTOs;
 using Purrfect_Learnings.Models;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Purrfect_Learnings.Controllers;
 
 [ApiController]
 [Route("api/assignments")]
+[Authorize]
 public class AssignmentController : ControllerBase
 {
     private readonly AssignmentRepository _repository;
@@ -19,6 +21,7 @@ public class AssignmentController : ControllerBase
 
     // GET: api/assignments
     [HttpGet]
+    [AllowAnonymous]
     public async Task<IActionResult> GetAll()
     {
         var assignments = await _repository.GetAllAsync();
@@ -27,6 +30,7 @@ public class AssignmentController : ControllerBase
 
     // GET: api/assignments/{id}
     [HttpGet("{id}")]
+    [AllowAnonymous]
     public async Task<IActionResult> GetById(int id)
     {
         var assignment = await _repository.GetByIdAsync(id);
@@ -38,6 +42,7 @@ public class AssignmentController : ControllerBase
 
     // POST: api/assignments
     [HttpPost]
+    [Authorize(Roles = "Teacher")]
     public async Task<IActionResult> Create([FromBody] CreateAssignmentDto dto)
     {
         if (!ModelState.IsValid)
@@ -62,6 +67,7 @@ public class AssignmentController : ControllerBase
 
     // PUT: api/assignments/{id}
     [HttpPut("{id}")]
+    [Authorize(Roles = "Teacher")]
     public async Task<IActionResult> Update(
         int id,
         [FromBody] UpdateAssignmentDto dto)
@@ -83,6 +89,7 @@ public class AssignmentController : ControllerBase
 
     // PUT: api/assignments/{assignmentId}/grade
     [HttpPut("{assignmentId}/grade")]
+    [Authorize(Roles = "Teacher")]
     public async Task<IActionResult> GradeAssignment(
         int assignmentId,
         [FromBody] GradeAssignmentDto dto)
@@ -101,6 +108,7 @@ public class AssignmentController : ControllerBase
 
     // DELETE: api/assignments/{id}
     [HttpDelete("{id}")]
+    [Authorize(Roles = "Teacher")]
     public async Task<IActionResult> Delete(int id)
     {
         var success = await _repository.DeleteAsync(id);

@@ -2,11 +2,13 @@ using Microsoft.AspNetCore.Mvc;
 using Purrfect_Learnings.Repositories;
 using Purrfect_Learnings.DTOs;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Purrfect_Learnings.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class CourseController : ControllerBase
     {
         private readonly ICourseRepository _courseRepository;
@@ -17,6 +19,7 @@ namespace Purrfect_Learnings.Controllers
         }
 
         [HttpGet]
+        [AllowAnonymous]
         public async Task<IActionResult> GetAll()
         {
             var courses = await _courseRepository.GetAllAsync();
@@ -24,6 +27,7 @@ namespace Purrfect_Learnings.Controllers
         }
 
         [HttpGet("{id}")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetById(int id)
         {
             var course = await _courseRepository.GetByIdAsync(id);
@@ -34,6 +38,7 @@ namespace Purrfect_Learnings.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Teacher")]
         public async Task<IActionResult> Create([FromBody] CreateCourseDto dto)
         {
             if (!ModelState.IsValid)
@@ -49,6 +54,7 @@ namespace Purrfect_Learnings.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "Teacher")]
         public async Task<IActionResult> Update(int id, [FromBody] UpdateCourseDto dto)
         {
             if (!ModelState.IsValid)
@@ -62,6 +68,7 @@ namespace Purrfect_Learnings.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Teacher")]
         public async Task<IActionResult> Delete(int id)
         {
             var deleted = await _courseRepository.DeleteAsync(id);

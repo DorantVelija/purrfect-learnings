@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -24,6 +25,7 @@ public class AuthController : ControllerBase
     }
     
     // POST: api/auth/register
+    [AllowAnonymous]
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterDto dto)
     {
@@ -54,6 +56,7 @@ public class AuthController : ControllerBase
     }
 
     // POST: api/auth/login
+    [AllowAnonymous]
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginDto dto)
     {
@@ -103,6 +106,7 @@ public class AuthController : ControllerBase
     }
 
     // POST: api/auth/refresh
+    [AllowAnonymous]
     [HttpPost("refresh")]
     public async Task<IActionResult> Refresh([FromBody] string refreshToken)
     {
@@ -145,6 +149,7 @@ public class AuthController : ControllerBase
     }
 
     // POST: api/auth/logout
+    [Authorize]
     [HttpPost("logout")]
     public async Task<IActionResult> Logout([FromBody] string refreshToken)
     {
