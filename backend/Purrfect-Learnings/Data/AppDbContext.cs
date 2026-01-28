@@ -15,6 +15,8 @@ public class AppDbContext : DbContext
     public DbSet<Assignment> Assignments { get; set; }
     public DbSet<AssignmentUser> AssignmentUsers { get; set; }
 
+    public DbSet<RefreshToken> RefreshTokens { get; set; }
+    
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -49,6 +51,6 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<UserCourse>()
             .Property(uc => uc.JoinedAt)
-            .HasDefaultValueSql("NOW()");
+            .HasDefaultValueSql("CURRENT_TIMESTAMP");
     }
 }

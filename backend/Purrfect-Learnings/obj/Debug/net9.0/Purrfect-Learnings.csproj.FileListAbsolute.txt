@@ -40,12 +40,19 @@ C:/Users/Dorant/Desktop/purrfect-learnings/backend/Purrfect-Learnings/obj/Debug/
 /Users/dorantvelija/Desktop/purrfect-learnings/purrfect-learnings/backend/Purrfect-Learnings/bin/Debug/net9.0/Purrfect-Learnings.dll
 /Users/dorantvelija/Desktop/purrfect-learnings/purrfect-learnings/backend/Purrfect-Learnings/bin/Debug/net9.0/Purrfect-Learnings.pdb
 /Users/dorantvelija/Desktop/purrfect-learnings/purrfect-learnings/backend/Purrfect-Learnings/bin/Debug/net9.0/Humanizer.dll
+/Users/dorantvelija/Desktop/purrfect-learnings/purrfect-learnings/backend/Purrfect-Learnings/bin/Debug/net9.0/Microsoft.AspNetCore.Authentication.JwtBearer.dll
 /Users/dorantvelija/Desktop/purrfect-learnings/purrfect-learnings/backend/Purrfect-Learnings/bin/Debug/net9.0/Microsoft.AspNetCore.OpenApi.dll
 /Users/dorantvelija/Desktop/purrfect-learnings/purrfect-learnings/backend/Purrfect-Learnings/bin/Debug/net9.0/Microsoft.EntityFrameworkCore.dll
 /Users/dorantvelija/Desktop/purrfect-learnings/purrfect-learnings/backend/Purrfect-Learnings/bin/Debug/net9.0/Microsoft.EntityFrameworkCore.Abstractions.dll
 /Users/dorantvelija/Desktop/purrfect-learnings/purrfect-learnings/backend/Purrfect-Learnings/bin/Debug/net9.0/Microsoft.EntityFrameworkCore.Design.dll
 /Users/dorantvelija/Desktop/purrfect-learnings/purrfect-learnings/backend/Purrfect-Learnings/bin/Debug/net9.0/Microsoft.EntityFrameworkCore.Relational.dll
 /Users/dorantvelija/Desktop/purrfect-learnings/purrfect-learnings/backend/Purrfect-Learnings/bin/Debug/net9.0/Microsoft.Extensions.DependencyModel.dll
+/Users/dorantvelija/Desktop/purrfect-learnings/purrfect-learnings/backend/Purrfect-Learnings/bin/Debug/net9.0/Microsoft.IdentityModel.Abstractions.dll
+/Users/dorantvelija/Desktop/purrfect-learnings/purrfect-learnings/backend/Purrfect-Learnings/bin/Debug/net9.0/Microsoft.IdentityModel.JsonWebTokens.dll
+/Users/dorantvelija/Desktop/purrfect-learnings/purrfect-learnings/backend/Purrfect-Learnings/bin/Debug/net9.0/Microsoft.IdentityModel.Logging.dll
+/Users/dorantvelija/Desktop/purrfect-learnings/purrfect-learnings/backend/Purrfect-Learnings/bin/Debug/net9.0/Microsoft.IdentityModel.Protocols.dll
+/Users/dorantvelija/Desktop/purrfect-learnings/purrfect-learnings/backend/Purrfect-Learnings/bin/Debug/net9.0/Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
+/Users/dorantvelija/Desktop/purrfect-learnings/purrfect-learnings/backend/Purrfect-Learnings/bin/Debug/net9.0/Microsoft.IdentityModel.Tokens.dll
 /Users/dorantvelija/Desktop/purrfect-learnings/purrfect-learnings/backend/Purrfect-Learnings/bin/Debug/net9.0/Microsoft.OpenApi.dll
 /Users/dorantvelija/Desktop/purrfect-learnings/purrfect-learnings/backend/Purrfect-Learnings/bin/Debug/net9.0/Mono.TextTemplating.dll
 /Users/dorantvelija/Desktop/purrfect-learnings/purrfect-learnings/backend/Purrfect-Learnings/bin/Debug/net9.0/Npgsql.dll
@@ -54,6 +61,7 @@ C:/Users/Dorant/Desktop/purrfect-learnings/backend/Purrfect-Learnings/obj/Debug/
 /Users/dorantvelija/Desktop/purrfect-learnings/purrfect-learnings/backend/Purrfect-Learnings/bin/Debug/net9.0/Swashbuckle.AspNetCore.SwaggerGen.dll
 /Users/dorantvelija/Desktop/purrfect-learnings/purrfect-learnings/backend/Purrfect-Learnings/bin/Debug/net9.0/Swashbuckle.AspNetCore.SwaggerUI.dll
 /Users/dorantvelija/Desktop/purrfect-learnings/purrfect-learnings/backend/Purrfect-Learnings/bin/Debug/net9.0/System.CodeDom.dll
+/Users/dorantvelija/Desktop/purrfect-learnings/purrfect-learnings/backend/Purrfect-Learnings/bin/Debug/net9.0/System.IdentityModel.Tokens.Jwt.dll
 /Users/dorantvelija/Desktop/purrfect-learnings/purrfect-learnings/backend/Purrfect-Learnings/obj/Debug/net9.0/Purrfect-Learnings.csproj.AssemblyReference.cache
 /Users/dorantvelija/Desktop/purrfect-learnings/purrfect-learnings/backend/Purrfect-Learnings/obj/Debug/net9.0/rpswa.dswa.cache.json
 /Users/dorantvelija/Desktop/purrfect-learnings/purrfect-learnings/backend/Purrfect-Learnings/obj/Debug/net9.0/Purrfect-Learnings.GeneratedMSBuildEditorConfig.editorconfig

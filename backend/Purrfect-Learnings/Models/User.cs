@@ -10,8 +10,8 @@ public enum Role
 public class User
 {
     public int UserId { get; set; }
-    public string Name { get; set; }
-    public string Email { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
     public Role Role { get; set; }
     public string? ProfilePictureUrl { get; set; }
     
@@ -23,10 +23,10 @@ public class User
 public class UserCourse
 {
     public int CourseId { get; set; }
-    public Course Course { get; set; }
+    public Course Course { get; set; } = null!;
     
     public int UserId { get; set; }
-    public User User { get; set; }
+    public User User { get; set; } = null!;
     
     public Role Role { get; set; }
     public DateTime JoinedAt { get; set; } = DateTime.UtcNow;

@@ -7,7 +7,7 @@ namespace Purrfect_Learnings.Repositories;
 public interface IUserRepository
 {
     Task<User> CreateAsync(User user);
-    Task<User> UpdateAsync(int userId, string newName, List<int>? courseIds = null);
+    Task<User?> UpdateAsync(int userId, string newName, List<int>? courseIds = null);
     Task<bool> DeleteAsync(int userId);
 }
 
@@ -27,7 +27,7 @@ public class UserRepository : IUserRepository
         return user;
     }
 
-    public async Task<User> UpdateAsync(int userId, string newName, List<int>? courseIds = null)
+    public async Task<User?> UpdateAsync(int userId, string newName, List<int>? courseIds = null)
     {
         var existingUser = await _context.Users.FindAsync(userId);
 

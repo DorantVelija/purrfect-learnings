@@ -3,10 +3,10 @@ namespace Purrfect_Learnings.Models;
 public class Course
 {
     public int Id { get; set; }
-    public string Name { get; set; }
-    public string Description { get; set; }
-    public DateTime Created { get; set; }
-    public DateTime Updated { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public DateTime Created { get; set; } = DateTime.UtcNow;
+    public DateTime Updated { get; set; } = DateTime.UtcNow;
     
     // for navigation
     public ICollection<UserCourse> Users { get; set; } = new List<UserCourse>();
@@ -16,16 +16,16 @@ public class Course
 public class Assignment
 {
     public int AssignmentId { get; set; }
-    public string AssignmentName { get; set; }
-    public string AssignmentDescription { get; set; }
+    public string AssignmentName { get; set; } = string.Empty;
+    public string AssignmentDescription { get; set; } = string.Empty;
 
     public int CourseId { get; set; }
     public Course Course { get; set; }
     
     // for navigation
     public ICollection<AssignmentUser> AssignmentUsers { get; set; } = new List<AssignmentUser>();
-    public DateTime Created { get; set; }
-    public DateTime Updated { get; set; }
+    public DateTime Created { get; set; } = DateTime.UtcNow;
+    public DateTime Updated { get; set; } = DateTime.UtcNow;
     public DateTime DueDate { get; set; }
 }
 
@@ -38,6 +38,6 @@ public class AssignmentUser
     public User User { get; set; }
 
     public DateTime AssignedAt { get; set; }
-    public DateTime SubmittedAt { get; set; }
+    public DateTime? SubmittedAt { get; set; }
     public decimal? Grade { get; set; }
 }

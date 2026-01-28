@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Purrfect_Learnings.Data;
 using Purrfect_Learnings.DTOs;
 using Purrfect_Learnings.Models;
@@ -16,25 +17,79 @@ public class UserController : ControllerBase
         _context = context;
     }
 
-    [HttpPost]
-    public IActionResult CreateUser([FromBody] CreateUserDto createUserDto)
+    // GET: api/user
+    [HttpGet]
+    public async Task<IActionResult> GetAll()
     {
-        if (createUserDto == null)
-        {
-            return BadRequest();
-        }
+        var users = await _context.Users.ToListAsync();
+        return Ok(users);
+    }
+
+    // GET: api/user/{id}
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetById(int id)
+    {
+        var user = await _context.Users.FindAsync(id);
+
+        if (user == null)
+            return NotFound();
+
+        return Ok(user);
+    }
+
+    // POST: api/user
+    [HttpPost]
+    public async Task<IActionResult> Create([FromBody] CreateUserDto dto)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
 
         var user = new User
         {
-            // Assuming CreateUserDto has properties like Username, Email, etc.
-            Name = createUserDto.Name,
-            Email = createUserDto.Email,
-            // Map other properties as needed
+            Name = dto.Name,
+            Email = dto.Email,
+            Role = dto.Role
         };
 
         _context.Users.Add(user);
-        _context.SaveChanges();
+        await _context.SaveChangesAsync();
 
-        return CreatedAtAction(nameof(CreateUser), new { id = user.UserId }, user);
+        return CreatedAtAction(
+            nameof(GetById),
+            new { id = user.UserId },
+            user
+        );
+    }
+
+    // PUT: api/user/{id}
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(int id, [FromBody] CreateUserDto dto)
+    {
+        var user = await _context.Users.FindAsync(id);
+
+        if (user == null)
+            return NotFound();
+
+        user.Name = dto.Name;
+        user.Email = dto.Email;
+        user.Role = dto.Role;
+
+        await _context.SaveChangesAsync();
+        return Ok(user);
+    }
+
+    // DELETE: api/user/{id}
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var user = await _context.Users.FindAsync(id);
+
+        if (user == null)
+            return NotFound();
+
+        _context.Users.Remove(user);
+        await _context.SaveChangesAsync();
+
+        return NoContent();
     }
 }

@@ -1,10 +1,10 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-using Purrfect_Learnings.Models;
 using Purrfect_Learnings.Data;
+using Purrfect_Learnings.Models;
 using Purrfect_Learnings.DTOs;
-using System.Linq;
 
 namespace Purrfect_Learnings.Repositories
 {
@@ -17,35 +17,38 @@ namespace Purrfect_Learnings.Repositories
             _context = context;
         }
 
+        // CREATE
         public async Task<Assignment> CreateAsync(Assignment assignment)
         {
-            if (assignment.AssignmentUsers == null)
-                assignment.AssignmentUsers = new List<AssignmentUser>();
-
             _context.Assignments.Add(assignment);
             await _context.SaveChangesAsync();
             return assignment;
         }
 
-        public async Task<Assignment> UpdateAsync(int assignmentId, string newTitle, string newDescription = null)
+        // UPDATE (name + description)
+        public async Task<Assignment?> UpdateAsync(
+            int assignmentId,
+            string newTitle,
+            string? newDescription = null)
         {
             var assignment = await _context.Assignments
-                .Include(a => a.AssignmentUsers)
                 .FirstOrDefaultAsync(a => a.AssignmentId == assignmentId);
 
             if (assignment == null)
                 return null;
 
             assignment.AssignmentName = newTitle;
+
             if (newDescription != null)
-            {
                 assignment.AssignmentDescription = newDescription;
-            }
+
+            assignment.Updated = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
             return assignment;
         }
 
+        // DELETE
         public async Task<bool> DeleteAsync(int assignmentId)
         {
             var assignment = await _context.Assignments
@@ -55,36 +58,33 @@ namespace Purrfect_Learnings.Repositories
             if (assignment == null)
                 return false;
 
-            // Remove related AssignmentUser entries
-            if (assignment.AssignmentUsers != null)
-            {
-                _context.AssignmentUsers.RemoveRange(assignment.AssignmentUsers);
-            }
-
+            _context.AssignmentUsers.RemoveRange(assignment.AssignmentUsers);
             _context.Assignments.Remove(assignment);
+
             await _context.SaveChangesAsync();
             return true;
         }
 
+        // GET ALL
         public async Task<List<AssignmentDto>> GetAllAsync()
         {
             var assignments = await _context.Assignments
                 .Include(a => a.AssignmentUsers)
                 .ToListAsync();
 
-            return assignments.Select(assignment => new AssignmentDto
+            return assignments.Select(a => new AssignmentDto
             {
-                AssignmentId = assignment.AssignmentId,
-                AssignmentName = assignment.AssignmentName,
-                AssignmentDescription = assignment.AssignmentDescription,
-                CourseId = assignment.CourseId,
-                Created = assignment.Created,
-                Updated = assignment.Updated,
-                DueDate = assignment.DueDate,
-                Users = assignment.AssignmentUsers.Select(au => new AssignmentUserDto
+                AssignmentId = a.AssignmentId,
+                AssignmentName = a.AssignmentName,
+                AssignmentDescription = a.AssignmentDescription,
+                CourseId = a.CourseId,
+                Created = a.Created,
+                Updated = a.Updated,
+                DueDate = a.DueDate,
+                Users = a.AssignmentUsers.Select(au => new AssignmentUserDto
                 {
-                    UserId = au.UserId,
                     AssignmentId = au.AssignmentId,
+                    UserId = au.UserId,
                     AssignedAt = au.AssignedAt,
                     SubmittedAt = au.SubmittedAt,
                     Grade = au.Grade
@@ -92,7 +92,8 @@ namespace Purrfect_Learnings.Repositories
             }).ToList();
         }
 
-        public async Task<AssignmentDto> GetByIdAsync(int assignmentId)
+        // GET BY ID
+        public async Task<AssignmentDto?> GetByIdAsync(int assignmentId)
         {
             var assignment = await _context.Assignments
                 .Include(a => a.AssignmentUsers)
@@ -112,13 +113,34 @@ namespace Purrfect_Learnings.Repositories
                 DueDate = assignment.DueDate,
                 Users = assignment.AssignmentUsers.Select(au => new AssignmentUserDto
                 {
-                    UserId = au.UserId,
                     AssignmentId = au.AssignmentId,
+                    UserId = au.UserId,
                     AssignedAt = au.AssignedAt,
                     SubmittedAt = au.SubmittedAt,
                     Grade = au.Grade
                 }).ToList()
             };
+        }
+
+        // GRADE ASSIGNMENT
+        public async Task<bool> GradeAsync(
+            int assignmentId,
+            int userId,
+            decimal grade)
+        {
+            var assignmentUser = await _context.AssignmentUsers
+                .FirstOrDefaultAsync(au =>
+                    au.AssignmentId == assignmentId &&
+                    au.UserId == userId);
+
+            if (assignmentUser == null)
+                return false;
+
+            assignmentUser.Grade = grade;
+            assignmentUser.SubmittedAt ??= DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return true;
         }
     }
 }

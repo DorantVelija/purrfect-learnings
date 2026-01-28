@@ -9,9 +9,9 @@ namespace Purrfect_Learnings.Controllers
     [Route("api/[controller]")]
     public class CourseController : ControllerBase
     {
-        private readonly CourseRepository _courseRepository;
+        private readonly ICourseRepository _courseRepository;
 
-        public CourseController(CourseRepository courseRepository)
+        public CourseController(ICourseRepository courseRepository)
         {
             _courseRepository = courseRepository;
         }
@@ -29,22 +29,35 @@ namespace Purrfect_Learnings.Controllers
             var course = await _courseRepository.GetByIdAsync(id);
             if (course == null)
                 return NotFound();
+
             return Ok(course);
         }
 
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateCourseDto dto)
         {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
             var created = await _courseRepository.CreateAsync(dto);
-            return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+
+            return CreatedAtAction(
+                nameof(GetById),
+                new { id = created.Id },
+                created
+            );
         }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, [FromBody] UpdateCourseDto dto)
         {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
             var updated = await _courseRepository.UpdateAsync(id, dto);
             if (updated == null)
                 return NotFound();
+
             return Ok(updated);
         }
 
@@ -54,6 +67,7 @@ namespace Purrfect_Learnings.Controllers
             var deleted = await _courseRepository.DeleteAsync(id);
             if (!deleted)
                 return NotFound();
+
             return NoContent();
         }
     }
