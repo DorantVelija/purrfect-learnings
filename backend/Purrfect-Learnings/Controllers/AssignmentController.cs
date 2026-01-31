@@ -40,6 +40,24 @@ public class AssignmentController : ControllerBase
         return Ok(assignment);
     }
 
+    // GET: api/assignments/course/{courseId}
+    [HttpGet("course/{courseId}")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetByCourseId(int courseId)
+    {
+        var assignments = await _repository.GetByCourseIdAsync(courseId);
+        return Ok(assignments);
+    }
+
+    // GET: api/assignments/user/{userId}
+    [HttpGet("user/{userId}")]
+    [Authorize(Roles = "Teacher,Admin")]
+    public async Task<IActionResult> GetByUserId(int userId)
+    {
+        var assignments = await _repository.GetByUserIdAsync(userId);
+        return Ok(assignments);
+    }
+
     // POST: api/assignments
     [HttpPost]
     [Authorize(Roles = "Teacher")]

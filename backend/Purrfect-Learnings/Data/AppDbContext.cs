@@ -21,9 +21,33 @@ public class AppDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        // Composite primary key for AssignmentUser
+        // User config
+        modelBuilder.Entity<User>()
+            .HasIndex(u => u.Email)
+            .IsUnique();
+
+        modelBuilder.Entity<User>()
+            .Property(u => u.Role)
+            .HasConversion<int>();
+
+        // Assignment config: explicit PK and identity
+        modelBuilder.Entity<Assignment>()
+            .HasKey(a => a.AssignmentId);
+
+        modelBuilder.Entity<Assignment>()
+            .Property(a => a.AssignmentId)
+            .ValueGeneratedOnAdd();
+
+        // Assignment → Course relationship
+        modelBuilder.Entity<Assignment>()
+            .HasOne(a => a.Course)
+            .WithMany()
+            .HasForeignKey(a => a.CourseId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Composite primary key for AssignmentUser (UserId, AssignmentId)
         modelBuilder.Entity<AssignmentUser>()
-            .HasKey(au => new { au.AssignmentId, au.UserId });
+            .HasKey(au => new { au.UserId, au.AssignmentId });
 
         modelBuilder.Entity<AssignmentUser>()
             .HasOne(au => au.Assignment)
@@ -52,5 +76,13 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<UserCourse>()
             .Property(uc => uc.JoinedAt)
             .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+        modelBuilder.Entity<UserCourse>()
+            .Property(uc => uc.Role)
+            .HasConversion<int>();
+        
+        modelBuilder.Entity<Course>()
+            .HasIndex(c => c.JoinCode)
+            .IsUnique();
     }
 }

@@ -7,11 +7,16 @@ namespace Purrfect_Learnings.Repositories;
 
 public interface ICourseRepository
 {
-    Task<Course> CreateAsync(CreateCourseDto dto);
+    Task<Course> CreateAsync(CreateCourseDto dto, int creatorUserId);
     Task<bool> DeleteAsync(int id);
     Task<Course> UpdateAsync(int id, UpdateCourseDto dto);
-    Task<IEnumerable<Course>> GetAllAsync();
+
+    Task<IEnumerable<Course>> GetAllAsync();                 // all courses (admin/debug)
+    Task<IEnumerable<Course>> GetAllForUserAsync(int userId); // courses for logged-in user
     Task<Course?> GetByIdAsync(int id);
+
+    Task<bool> JoinCourseAsync(string joinCode, int userId);
+    Task<bool> LeaveCourseAsync(int courseId, int userId);
 }
 
 public class CourseRepository : ICourseRepository
@@ -23,7 +28,7 @@ public class CourseRepository : ICourseRepository
         _context = context;
     }
 
-    public async Task<Course> CreateAsync(CreateCourseDto dto)
+    public async Task<Course> CreateAsync(CreateCourseDto dto, int creatorUserId)
     {
         var course = new Course
         {
@@ -33,41 +38,43 @@ public class CourseRepository : ICourseRepository
             Updated = DateTime.UtcNow
         };
 
-        if (dto.TeacherIds != null)
-        {
-            foreach (var userId in dto.TeacherIds)
-            {
-                course.Users.Add(new UserCourse
-                {
-                    UserId = userId,
-                    Role = Role.Teacher,
-                    Course = course
-                });
-            }
-        }
-
         _context.Courses.Add(course);
+        await _context.SaveChangesAsync();
+
+        _context.UserCourses.Add(new UserCourse
+        {
+            CourseId = course.Id,
+            UserId = creatorUserId,
+            Role = Role.Teacher
+        });
+
         await _context.SaveChangesAsync();
         return course;
     }
 
-    public async Task<bool> DeleteAsync(int id)
+    public async Task<IEnumerable<Course>> GetAllAsync()
     {
-        var course = await _context.Courses
+        return await _context.Courses
             .Include(c => c.Users)
+            .ThenInclude(uc => uc.User)
+            .ToListAsync();
+    }
+
+    public async Task<IEnumerable<Course>> GetAllForUserAsync(int userId)
+    {
+        return await _context.Courses
+            .Where(c => c.Users.Any(uc => uc.UserId == userId))
+            .Include(c => c.Users)
+            .ThenInclude(uc => uc.User)
+            .ToListAsync();
+    }
+
+    public async Task<Course?> GetByIdAsync(int id)
+    {
+        return await _context.Courses
+            .Include(c => c.Users)
+            .ThenInclude(uc => uc.User)
             .FirstOrDefaultAsync(c => c.Id == id);
-
-        if (course == null)
-            return false;
-
-        var assignments = _context.Assignments.Where(a => a.CourseId == id);
-        _context.Assignments.RemoveRange(assignments);
-
-        _context.UserCourses.RemoveRange(course.Users);
-        _context.Courses.Remove(course);
-
-        await _context.SaveChangesAsync();
-        return true;
     }
 
     public async Task<Course> UpdateAsync(int id, UpdateCourseDto dto)
@@ -89,11 +96,7 @@ public class CourseRepository : ICourseRepository
                 .Where(uc => dto.RemoveStudentIds.Contains(uc.UserId) && uc.Role == Role.Student)
                 .ToList();
 
-            foreach (var uc in toRemove)
-            {
-                course.Users.Remove(uc);
-                _context.UserCourses.Remove(uc);
-            }
+            _context.UserCourses.RemoveRange(toRemove);
         }
 
         if (dto.RemoveTeacherIds != null)
@@ -102,11 +105,7 @@ public class CourseRepository : ICourseRepository
                 .Where(uc => dto.RemoveTeacherIds.Contains(uc.UserId) && uc.Role == Role.Teacher)
                 .ToList();
 
-            foreach (var uc in toRemove)
-            {
-                course.Users.Remove(uc);
-                _context.UserCourses.Remove(uc);
-            }
+            _context.UserCourses.RemoveRange(toRemove);
         }
 
         if (dto.AddStudentIds != null)
@@ -145,17 +144,59 @@ public class CourseRepository : ICourseRepository
         return course;
     }
 
-    public async Task<IEnumerable<Course>> GetAllAsync()
+    public async Task<bool> DeleteAsync(int id)
     {
-        return await _context.Courses
-            .Include(c => c.Users)
-            .ToListAsync();
-    }
-
-    public async Task<Course?> GetByIdAsync(int id)
-    {
-        return await _context.Courses
+        var course = await _context.Courses
             .Include(c => c.Users)
             .FirstOrDefaultAsync(c => c.Id == id);
+
+        if (course == null)
+            return false;
+
+        var assignments = _context.Assignments.Where(a => a.CourseId == id);
+        _context.Assignments.RemoveRange(assignments);
+
+        _context.UserCourses.RemoveRange(course.Users);
+        _context.Courses.Remove(course);
+
+        await _context.SaveChangesAsync();
+        return true;
+    }
+    public async Task<bool> JoinCourseAsync(string joinCode, int userId)
+    {
+        var course = await _context.Courses
+            .FirstOrDefaultAsync(c => c.JoinCode == joinCode);
+
+        if (course == null)
+            return false;
+        
+        var alreadyJoined = await _context.UserCourses
+            .AnyAsync(uc => uc.CourseId == course.Id && uc.UserId == userId);
+
+        if (alreadyJoined)
+            return false;
+        
+        _context.UserCourses.Add(new UserCourse
+        {
+            CourseId = course.Id,
+            UserId = userId,
+            Role = Role.Student
+        });
+
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> LeaveCourseAsync(int courseId, int userId)
+    {
+        var userCourse = await _context.UserCourses
+            .FirstOrDefaultAsync(uc => uc.CourseId == courseId && uc.UserId == userId);
+
+        if (userCourse == null)
+            return false;
+
+        _context.UserCourses.Remove(userCourse);
+        await _context.SaveChangesAsync();
+        return true;
     }
 }

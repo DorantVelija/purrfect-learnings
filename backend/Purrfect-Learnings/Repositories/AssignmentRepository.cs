@@ -142,5 +142,64 @@ namespace Purrfect_Learnings.Repositories
             await _context.SaveChangesAsync();
             return true;
         }
+
+        // GET BY COURSE ID
+        public async Task<List<AssignmentDto>> GetByCourseIdAsync(int courseId)
+        {
+            var assignments = await _context.Assignments
+                .Where(a => a.CourseId == courseId)
+                .Include(a => a.AssignmentUsers)
+                .ToListAsync();
+
+            return assignments.Select(a => new AssignmentDto
+            {
+                AssignmentId = a.AssignmentId,
+                AssignmentName = a.AssignmentName,
+                AssignmentDescription = a.AssignmentDescription,
+                CourseId = a.CourseId,
+                Created = a.Created,
+                Updated = a.Updated,
+                DueDate = a.DueDate,
+                Users = a.AssignmentUsers.Select(au => new AssignmentUserDto
+                {
+                    AssignmentId = au.AssignmentId,
+                    UserId = au.UserId,
+                    AssignedAt = au.AssignedAt,
+                    SubmittedAt = au.SubmittedAt,
+                    Grade = au.Grade
+                }).ToList()
+            }).ToList();
+        }
+
+        // GET BY USER ID
+        public async Task<List<AssignmentDto>> GetByUserIdAsync(int userId)
+        {
+            var assignments = await _context.AssignmentUsers
+                .Where(au => au.UserId == userId)
+                .Include(au => au.Assignment)
+                .ThenInclude(a => a.AssignmentUsers)
+                .Select(au => au.Assignment)
+                .Distinct()
+                .ToListAsync();
+
+            return assignments.Select(a => new AssignmentDto
+            {
+                AssignmentId = a.AssignmentId,
+                AssignmentName = a.AssignmentName,
+                AssignmentDescription = a.AssignmentDescription,
+                CourseId = a.CourseId,
+                Created = a.Created,
+                Updated = a.Updated,
+                DueDate = a.DueDate,
+                Users = a.AssignmentUsers.Select(au => new AssignmentUserDto
+                {
+                    AssignmentId = au.AssignmentId,
+                    UserId = au.UserId,
+                    AssignedAt = au.AssignedAt,
+                    SubmittedAt = au.SubmittedAt,
+                    Grade = au.Grade
+                }).ToList()
+            }).ToList();
+        }
     }
 }

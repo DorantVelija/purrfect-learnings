@@ -59,10 +59,10 @@ namespace Purrfect_Learnings.Migrations
 
             modelBuilder.Entity("Purrfect_Learnings.Models.AssignmentUser", b =>
                 {
-                    b.Property<int>("AssignmentId")
+                    b.Property<int>("UserId")
                         .HasColumnType("integer");
 
-                    b.Property<int>("UserId")
+                    b.Property<int>("AssignmentId")
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("AssignedAt")
@@ -74,9 +74,9 @@ namespace Purrfect_Learnings.Migrations
                     b.Property<DateTime?>("SubmittedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.HasKey("AssignmentId", "UserId");
+                    b.HasKey("UserId", "AssignmentId");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("AssignmentId");
 
                     b.ToTable("AssignmentUsers");
                 });
@@ -96,6 +96,11 @@ namespace Purrfect_Learnings.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("JoinCode")
+                        .IsRequired()
+                        .HasMaxLength(9)
+                        .HasColumnType("character varying(9)");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
@@ -104,6 +109,9 @@ namespace Purrfect_Learnings.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("JoinCode")
+                        .IsUnique();
 
                     b.ToTable("Courses");
                 });
@@ -152,6 +160,10 @@ namespace Purrfect_Learnings.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("ProfilePictureUrl")
                         .HasColumnType("text");
 
@@ -159,6 +171,9 @@ namespace Purrfect_Learnings.Migrations
                         .HasColumnType("integer");
 
                     b.HasKey("UserId");
+
+                    b.HasIndex("Email")
+                        .IsUnique();
 
                     b.ToTable("Users");
                 });

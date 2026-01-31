@@ -5,6 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Microsoft.AspNetCore.Identity;
 using Purrfect_Learnings.Data;
 using Purrfect_Learnings.DTOs;
 using Purrfect_Learnings.Models;
@@ -23,36 +24,29 @@ public class AuthController : ControllerBase
         _context = context;
         _config = config;
     }
-    
+
     // POST: api/auth/register
     [AllowAnonymous]
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterDto dto)
     {
-        var exists = await _context.Users.AnyAsync(u => u.Email == dto.Email);
-        if (exists)
+        if (await _context.Users.AnyAsync(u => u.Email == dto.Email))
             return BadRequest("User already exists");
-
-        if (!Enum.TryParse<Role>(dto.Role, true, out var role))
-            return BadRequest("Invalid role");
 
         var user = new User
         {
             Name = dto.Name,
             Email = dto.Email,
-            Role = role
+            Role = dto.Role
         };
+
+        var hasher = new PasswordHasher<User>();
+        user.PasswordHash = hasher.HashPassword(user, dto.Password);
 
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
 
-        return Ok(new
-        {
-            user.UserId,
-            user.Name,
-            user.Email,
-            Role = user.Role.ToString()
-        });
+        return Ok();
     }
 
     // POST: api/auth/login
@@ -60,11 +54,14 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginDto dto)
     {
-        var user = await _context.Users
-            .FirstOrDefaultAsync(u => u.Email == dto.Email);
-
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
         if (user == null)
-            return Unauthorized("Invalid credentials");
+            return Unauthorized();
+
+        var hasher = new PasswordHasher<User>();
+        if (hasher.VerifyHashedPassword(user, user.PasswordHash, dto.Password)
+            == PasswordVerificationResult.Failed)
+            return Unauthorized();
 
         var claims = new[]
         {
@@ -76,7 +73,7 @@ public class AuthController : ControllerBase
             Encoding.UTF8.GetBytes(_config["Jwt:Key"])
         );
 
-        var token = new JwtSecurityToken(
+        var accessToken = new JwtSecurityToken(
             issuer: _config["Jwt:Issuer"],
             audience: _config["Jwt:Audience"],
             claims: claims,
@@ -98,39 +95,86 @@ public class AuthController : ControllerBase
         _context.RefreshTokens.Add(refreshToken);
         await _context.SaveChangesAsync();
 
+        // COOKIE OPTIONS — WORKS ON http://localhost
+        var accessCookieOptions = new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = false,
+            SameSite = SameSiteMode.Lax,
+            Expires = DateTimeOffset.UtcNow.AddMinutes(
+                int.Parse(_config["Jwt:ExpireMinutes"])
+            )
+        };
+
+        var refreshCookieOptions = new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = false,
+            SameSite = SameSiteMode.Lax,
+            Expires = refreshToken.ExpiresAt
+        };
+
+        Response.Cookies.Append(
+            "access_token",
+            new JwtSecurityTokenHandler().WriteToken(accessToken),
+            accessCookieOptions
+        );
+
+        Response.Cookies.Append(
+            "refresh_token",
+            refreshToken.Token,
+            refreshCookieOptions
+        );
+
+        return Ok();
+    }
+
+    // GET: api/auth/me
+    [Authorize]
+    [HttpGet("me")]
+    public IActionResult Me()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var role = User.FindFirstValue(ClaimTypes.Role);
+
         return Ok(new
         {
-            accessToken = new JwtSecurityTokenHandler().WriteToken(token),
-            refreshToken = refreshToken.Token
+            id = int.Parse(userId!),
+            role
         });
     }
 
     // POST: api/auth/refresh
     [AllowAnonymous]
     [HttpPost("refresh")]
-    public async Task<IActionResult> Refresh([FromBody] string refreshToken)
+    public async Task<IActionResult> Refresh()
     {
-        var storedToken = await _context.RefreshTokens
-            .Include(rt => rt.User)
-            .FirstOrDefaultAsync(rt =>
-                rt.Token == refreshToken &&
-                !rt.IsRevoked &&
-                rt.ExpiresAt > DateTime.UtcNow);
+        var token = Request.Cookies["refresh_token"];
+        if (string.IsNullOrEmpty(token))
+            return Unauthorized();
 
-        if (storedToken == null)
+        var stored = await _context.RefreshTokens
+            .Include(r => r.User)
+            .FirstOrDefaultAsync(r =>
+                r.Token == token &&
+                !r.IsRevoked &&
+                r.ExpiresAt > DateTime.UtcNow
+            );
+
+        if (stored == null)
             return Unauthorized();
 
         var claims = new[]
         {
-            new Claim(ClaimTypes.NameIdentifier, storedToken.User.UserId.ToString()),
-            new Claim(ClaimTypes.Role, storedToken.User.Role.ToString())
+            new Claim(ClaimTypes.NameIdentifier, stored.User.UserId.ToString()),
+            new Claim(ClaimTypes.Role, stored.User.Role.ToString())
         };
 
         var key = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(_config["Jwt:Key"])
         );
 
-        var newToken = new JwtSecurityToken(
+        var newAccessToken = new JwtSecurityToken(
             issuer: _config["Jwt:Issuer"],
             audience: _config["Jwt:Audience"],
             claims: claims,
@@ -142,26 +186,30 @@ public class AuthController : ControllerBase
             )
         );
 
-        return Ok(new
-        {
-            accessToken = new JwtSecurityTokenHandler().WriteToken(newToken)
-        });
+        Response.Cookies.Append(
+            "access_token",
+            new JwtSecurityTokenHandler().WriteToken(newAccessToken),
+            new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = false,
+                SameSite = SameSiteMode.Lax,
+                Expires = DateTimeOffset.UtcNow.AddMinutes(
+                    int.Parse(_config["Jwt:ExpireMinutes"])
+                )
+            }
+        );
+
+        return Ok();
     }
 
     // POST: api/auth/logout
     [Authorize]
     [HttpPost("logout")]
-    public async Task<IActionResult> Logout([FromBody] string refreshToken)
+    public IActionResult Logout()
     {
-        var token = await _context.RefreshTokens
-            .FirstOrDefaultAsync(rt => rt.Token == refreshToken);
-
-        if (token != null)
-        {
-            token.IsRevoked = true;
-            await _context.SaveChangesAsync();
-        }
-
+        Response.Cookies.Delete("access_token");
+        Response.Cookies.Delete("refresh_token");
         return Ok();
     }
 }

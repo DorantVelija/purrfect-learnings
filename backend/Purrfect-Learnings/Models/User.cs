@@ -1,3 +1,6 @@
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace Purrfect_Learnings.Models;
 
 public enum Role
@@ -9,8 +12,11 @@ public enum Role
 
 public class User
 {
+    [Key]
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int UserId { get; set; }
     public string Name { get; set; } = string.Empty;
+    public string PasswordHash { get; set; } =  string.Empty;
     public string Email { get; set; } = string.Empty;
     public Role Role { get; set; }
     public string? ProfilePictureUrl { get; set; }

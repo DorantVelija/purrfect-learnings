@@ -8,6 +8,8 @@ public interface IUserRepository
 {
     Task<User> CreateAsync(User user);
     Task<User?> UpdateAsync(int userId, string newName, List<int>? courseIds = null);
+    Task<List<Course>> GetUserCoursesAsync(int userId);
+    Task<List<Assignment>> GetUserAssignmentsForCourseAsync(int userId, int courseId);
     Task<bool> DeleteAsync(int userId);
 }
 
@@ -65,6 +67,24 @@ public class UserRepository : IUserRepository
         await _context.SaveChangesAsync();
 
         return existingUser;
+    }
+
+    public async Task<List<Course>> GetUserCoursesAsync(int userId)
+    {
+        return await _context.UserCourses
+            .Where(uc => uc.UserId == userId)
+            .Include(uc => uc.Course)
+            .Select(uc => uc.Course)
+            .ToListAsync();
+    }
+
+    public async Task<List<Assignment>> GetUserAssignmentsForCourseAsync(int userId, int courseId)
+    {
+        return await _context.AssignmentUsers
+            .Where(au => au.UserId == userId && au.Assignment.CourseId == courseId)
+            .Include(au => au.Assignment)
+            .Select(au => au.Assignment)
+            .ToListAsync();
     }
 
     public async Task<bool> DeleteAsync(int userId)
