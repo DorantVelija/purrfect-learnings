@@ -21,6 +21,15 @@ interface Course {
     students: Student[];
 }
 
+// Matching your JSON sample
+interface Assignment {
+    assignmentId: number;
+    assignmentName: string;
+    assignmentDescription: string;
+    courseId: number;
+    dueDate: string;
+}
+
 /* ---------- Small UI components ---------- */
 
 function Tab({
@@ -89,16 +98,24 @@ export default function ClassPage() {
     const { id } = useParams<{ id: string }>();
     const [activeTab, setActiveTab] = useState<"stream" | "classwork" | "people">("stream");
     const [course, setCourse] = useState<Course | null>(null);
+    const [assignments, setAssignments] = useState<Assignment[]>([]); // New state for list
     const [loading, setLoading] = useState(true);
     const [showPostBox, setShowPostBox] = useState(false);
 
     useEffect(() => {
         if (!id) return;
 
+        // Load Course
         api.get<Course>(`/course/${id}`)
             .then(res => setCourse(res.data))
             .catch(err => console.error("Failed to load course:", err))
             .finally(() => setLoading(false));
+
+        // Load Assignments - using 'id' from params
+        api.get<Assignment[]>(`/assignments/course/${id}`)
+            .then(res => setAssignments(res.data))
+            .catch(err => console.error("Failed to load assignments:", err));
+
     }, [id]);
 
     if (loading) {
@@ -168,7 +185,7 @@ export default function ClassPage() {
                                 onClick={() => setShowPostBox(prev => !prev)}
                                 className="rounded-full border border-gray-200 px-5 py-3 text-sm font-semibold text-gray-600 bg-white hover:bg-gray-50 transition"
                             >
-                                {showPostBox ? "Cancel post" : "Create post"}
+                                {showPostBox ? "Cancel post" : "Announce something to the class"}
                             </button>
 
                             {showPostBox && (
@@ -193,22 +210,34 @@ export default function ClassPage() {
                             )}
                         </div>
 
-                        <AssignmentCard
-                            id="1"
-                            title="Homework 1"
-                            due="Tomorrow"
-                        />
-                        <AssignmentCard
-                            id="2"
-                            title="Project: Cat Research"
-                            due="Next week"
-                        />
+                        {/* Assignments showing in stream */}
+                        {assignments.map(asgn => (
+                            <AssignmentCard
+                                key={asgn.assignmentId}
+                                id={asgn.assignmentId.toString()}
+                                title={asgn.assignmentName}
+                                due={new Date(asgn.dueDate).toLocaleDateString()}
+                            />
+                        ))}
                     </>
                 )}
 
                 {activeTab === "classwork" && (
-                    <div className="text-center py-10 text-gray-500">
-                        📚 Classwork coming soon!
+                    <div className="space-y-4">
+                        {assignments.length > 0 ? (
+                            assignments.map(asgn => (
+                                <AssignmentCard
+                                    key={asgn.assignmentId}
+                                    id={asgn.assignmentId.toString()}
+                                    title={asgn.assignmentName}
+                                    due={new Date(asgn.dueDate).toLocaleDateString()}
+                                />
+                            ))
+                        ) : (
+                            <div className="text-center py-10 text-gray-500">
+                                📚 No assignments yet!
+                            </div>
+                        )}
                     </div>
                 )}
 
