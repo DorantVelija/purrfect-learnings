@@ -9,7 +9,7 @@ export default function Dashboard() {
         if (!joinCode.trim()) return;
         try {
             // Match your backend: POST /api/course/{id}/join?joinCode=XXX
-            await api.post(`/course/${joinCode}/join?joinCode=${joinCode.trim()}`);
+            await api.post(`/course/${joinCode.trim()}/join?joinCode=${joinCode.trim()}`);
             setJoinCode("");
             window.location.reload(); // simple refresh to reload classes
         } catch (e: any) {

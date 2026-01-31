@@ -90,6 +90,25 @@ namespace Purrfect_Learnings.Controllers
         }
 
         // ============================
+        // GET users for a course
+        // ============================
+        [HttpGet("{id}/users")]
+        [Authorize]
+        public async Task<IActionResult> GetUsersForCourse(int id)
+        {
+            var users = await _courseRepository.GetUsersForCourseAsync(id);
+
+            var result = users.Select(uc => new
+            {
+                Id = uc.UserId,
+                Name = uc.User.Name,
+                Role = uc.Role.ToString()
+            });
+
+            return Ok(result);
+        }
+
+        // ============================
         // CREATE course (teachers)
         // ============================
         [HttpPost]
@@ -149,7 +168,7 @@ namespace Purrfect_Learnings.Controllers
         // POST /api/course/{id}/join
         // ============================
         [HttpPost("{id}/join")]
-        public async Task<IActionResult> Join([FromBody] string joinCode)
+        public async Task<IActionResult> Join([FromQuery] string joinCode)
         {
             var userId = GetUserId();
 

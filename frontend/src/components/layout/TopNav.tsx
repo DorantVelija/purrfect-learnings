@@ -1,6 +1,6 @@
 export default function TopNav() {
     return (
-        <header className="relative m-4 mt-2  rounded-[3rem] overflow-hidden shadow-sm">
+        <header className="relative m-4 mt-2  rounded-[3rem] overflow-hidden shadow-md">
             {/* paper base FIRST */}
             <div className="absolute inset-0 bg-[#fff8f3]" />
 
@@ -27,12 +27,12 @@ export default function TopNav() {
             <div className="relative z-10 flex items-center justify-between px-10 py-8">
                 {/* left */}
                 <div className="flex items-center gap-6">
-                    <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center text-4xl shadow-sm">
+                    <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-3xl shadow">
                         🐱
                     </div>
 
                     <div className="bg-white/90 px-6 py-3 rounded-full shadow-sm">
-                        <h1 className="text-4xl font-black tracking-tight text-[#6b4f3f]">
+                        <h1 className="text-2xl font-black tracking-tight text-[#6b4f3f]">
                             Purr-fect Learnings
                             <span className="ml-2">🐾</span>
                         </h1>

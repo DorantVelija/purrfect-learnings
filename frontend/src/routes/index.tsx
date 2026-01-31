@@ -17,6 +17,8 @@ import ProfilePage from "../pages/Profile";
 import BadgesPage from "../pages/Badges";
 import NotFound from "../pages/errors/NotFound";
 import CreateClass from "../pages/CreateClass";
+import TeacherClassPage from "../pages/TeacherClassPage.tsx";
+import TeacherAssignmentPage from "../pages/TeacherAssignment.tsx";
 
 type Role = "Admin" | "Teacher" | "Student";
 
@@ -132,11 +134,35 @@ export default function AppRoutes() {
                 }
             />
 
+            {/* View Class - Teacher only xo */}
+
+            <Route
+                path={"/teacher/classes/:id"}
+                element={
+                    <RequireAuth allowedRoles={["Teacher"]}>
+                        <ConditionalLayout>
+                            <TeacherClassPage />
+                        </ConditionalLayout>
+                    </RequireAuth>
+                }
+            />
+
+            <Route
+                path="/teacher/classes/:id/assignment/:assignmentId"
+                element={
+                    <RequireAuth allowedRoles={["Teacher"]}>
+                        <ConditionalLayout>
+                            <TeacherAssignmentPage />
+                        </ConditionalLayout>
+                    </RequireAuth>
+                }
+            />
+
             {/* Protected Routes - use conditional layout */}
             <Route
                 path="/classes/:id"
                 element={
-                    <RequireAuth>
+                    <RequireAuth allowedRoles={["Student"]}>
                         <ConditionalLayout>
                             <ClassPage />
                         </ConditionalLayout>

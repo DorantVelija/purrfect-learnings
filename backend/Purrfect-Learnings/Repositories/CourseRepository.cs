@@ -17,6 +17,8 @@ public interface ICourseRepository
 
     Task<bool> JoinCourseAsync(string joinCode, int userId);
     Task<bool> LeaveCourseAsync(int courseId, int userId);
+
+    Task<IEnumerable<UserCourse>> GetUsersForCourseAsync(int courseId);
 }
 
 public class CourseRepository : ICourseRepository
@@ -75,6 +77,14 @@ public class CourseRepository : ICourseRepository
             .Include(c => c.Users)
             .ThenInclude(uc => uc.User)
             .FirstOrDefaultAsync(c => c.Id == id);
+    }
+
+    public async Task<IEnumerable<UserCourse>> GetUsersForCourseAsync(int courseId)
+    {
+        return await _context.UserCourses
+            .Where(uc => uc.CourseId == courseId)
+            .Include(uc => uc.User)
+            .ToListAsync();
     }
 
     public async Task<Course> UpdateAsync(int id, UpdateCourseDto dto)

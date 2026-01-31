@@ -20,25 +20,33 @@ const courseColors = [
 ];
 
 const courseIcons = [
-    "🐾",
-    "📚",
-    "🔬",
-    "🏛️",
-    "🎨",
-    "🎵",
-    "💻",
-    "🌍"
+    "🐾", "📚", "🔬", "🏛️", "🎨", "🎵", "💻", "🌍"
 ];
 
 export default function ClassGrid() {
     const [courses, setCourses] = useState<Course[]>([]);
+    const [userRole, setUserRole] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        api.get<Course[]>("/course/")
-            .then(res => setCourses(res.data))
-            .catch(err => console.error("Failed to load courses:", err))
-            .finally(() => setLoading(false));
+        const loadData = async () => {
+            try {
+                // Fetch both the user role and the courses
+                const [authRes, coursesRes] = await Promise.all([
+                    api.get("/auth/me"),
+                    api.get<Course[]>("/course/")
+                ]);
+
+                setUserRole(authRes.data.role);
+                setCourses(coursesRes.data);
+            } catch (err) {
+                console.error("Failed to load dashboard data:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadData();
     }, []);
 
     if (loading) {
@@ -65,17 +73,25 @@ export default function ClassGrid() {
 
     return (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {courses.map((course, index) => (
-                <ClassCard
-                    key={course.id}
-                    title={course.name}
-                    subtitle={course.description}
-                    color={courseColors[index % courseColors.length]}
-                    icon={courseIcons[index % courseIcons.length]}
-                    to={`/classes/${course.id}`}
-                    courseId={course.id}
-                />
-            ))}
+            {courses.map((course, index) => {
+                // Check if role is Teacher to set the correct route
+                const isTeacher = userRole === "Teacher";
+                const targetPath = isTeacher
+                    ? `/teacher/classes/${course.id}`
+                    : `/classes/${course.id}`;
+
+                return (
+                    <ClassCard
+                        key={course.id}
+                        title={course.name}
+                        subtitle={course.description}
+                        color={courseColors[index % courseColors.length]}
+                        icon={courseIcons[index % courseIcons.length]}
+                        to={targetPath}
+                        courseId={course.id}
+                    />
+                );
+            })}
         </div>
     );
 }
