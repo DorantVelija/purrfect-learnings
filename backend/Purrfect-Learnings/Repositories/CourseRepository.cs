@@ -1,212 +1,162 @@
-using Purrfect_Learnings.Models;
+using Microsoft.EntityFrameworkCore;
 using Purrfect_Learnings.Data;
 using Purrfect_Learnings.DTOs;
-using Microsoft.EntityFrameworkCore;
+using Purrfect_Learnings.Models;
 
-namespace Purrfect_Learnings.Repositories;
-
-public interface ICourseRepository
+namespace Purrfect_Learnings.Repositories
 {
-    Task<Course> CreateAsync(CreateCourseDto dto, int creatorUserId);
-    Task<bool> DeleteAsync(int id);
-    Task<Course> UpdateAsync(int id, UpdateCourseDto dto);
-
-    Task<IEnumerable<Course>> GetAllAsync();                 // all courses (admin/debug)
-    Task<IEnumerable<Course>> GetAllForUserAsync(int userId); // courses for logged-in user
-    Task<Course?> GetByIdAsync(int id);
-
-    Task<bool> JoinCourseAsync(string joinCode, int userId);
-    Task<bool> LeaveCourseAsync(int courseId, int userId);
-
-    Task<IEnumerable<UserCourse>> GetUsersForCourseAsync(int courseId);
-}
-
-public class CourseRepository : ICourseRepository
-{
-    private readonly AppDbContext _context;
-
-    public CourseRepository(AppDbContext context)
+    public interface ICourseRepository
     {
-        _context = context;
+        Task<IEnumerable<Course>> GetAllForUserAsync(int userId);
+        Task<CourseReadDto?> GetByIdAsync(int courseId, int userId);
+        Task<IEnumerable<UserCourse>> GetUsersForCourseAsync(int courseId, int userId);
+        Task<Course> CreateAsync(CreateCourseDto dto, int teacherId);
+        Task<Course?> UpdateAsync(int id, UpdateCourseDto dto);
+        Task<bool> DeleteAsync(int id);
+        Task<bool> JoinCourseAsync(string joinCode, int userId);
+        Task<bool> LeaveCourseAsync(int courseId, int userId);
     }
 
-    public async Task<Course> CreateAsync(CreateCourseDto dto, int creatorUserId)
+    // --- The Implementation ---
+    public class CourseRepository : ICourseRepository
     {
-        var course = new Course
+        private readonly AppDbContext _context;
+
+        public CourseRepository(AppDbContext context)
         {
-            Name = dto.Name,
-            Description = dto.Description,
-            Created = DateTime.UtcNow,
-            Updated = DateTime.UtcNow
-        };
-
-        _context.Courses.Add(course);
-        await _context.SaveChangesAsync();
-
-        _context.UserCourses.Add(new UserCourse
-        {
-            CourseId = course.Id,
-            UserId = creatorUserId,
-            Role = Role.Teacher
-        });
-
-        await _context.SaveChangesAsync();
-        return course;
-    }
-
-    public async Task<IEnumerable<Course>> GetAllAsync()
-    {
-        return await _context.Courses
-            .Include(c => c.Users)
-            .ThenInclude(uc => uc.User)
-            .ToListAsync();
-    }
-
-    public async Task<IEnumerable<Course>> GetAllForUserAsync(int userId)
-    {
-        return await _context.Courses
-            .Where(c => c.Users.Any(uc => uc.UserId == userId))
-            .Include(c => c.Users)
-            .ThenInclude(uc => uc.User)
-            .ToListAsync();
-    }
-
-    public async Task<Course?> GetByIdAsync(int id)
-    {
-        return await _context.Courses
-            .Include(c => c.Users)
-            .ThenInclude(uc => uc.User)
-            .FirstOrDefaultAsync(c => c.Id == id);
-    }
-
-    public async Task<IEnumerable<UserCourse>> GetUsersForCourseAsync(int courseId)
-    {
-        return await _context.UserCourses
-            .Where(uc => uc.CourseId == courseId)
-            .Include(uc => uc.User)
-            .ToListAsync();
-    }
-
-    public async Task<Course> UpdateAsync(int id, UpdateCourseDto dto)
-    {
-        var course = await _context.Courses
-            .Include(c => c.Users)
-            .FirstOrDefaultAsync(c => c.Id == id);
-
-        if (course == null)
-            throw new Exception("Course not found");
-
-        course.Name = dto.Name;
-        course.Description = dto.Description;
-        course.Updated = DateTime.UtcNow;
-
-        if (dto.RemoveStudentIds != null)
-        {
-            var toRemove = course.Users
-                .Where(uc => dto.RemoveStudentIds.Contains(uc.UserId) && uc.Role == Role.Student)
-                .ToList();
-
-            _context.UserCourses.RemoveRange(toRemove);
+            _context = context;
         }
 
-        if (dto.RemoveTeacherIds != null)
+        public async Task<IEnumerable<Course>> GetAllForUserAsync(int userId)
         {
-            var toRemove = course.Users
-                .Where(uc => dto.RemoveTeacherIds.Contains(uc.UserId) && uc.Role == Role.Teacher)
-                .ToList();
-
-            _context.UserCourses.RemoveRange(toRemove);
+            return await _context.UserCourses
+                .Where(uc => uc.UserId == userId)
+                .Select(uc => uc.Course)
+                .ToListAsync();
         }
 
-        if (dto.AddStudentIds != null)
+        public async Task<CourseReadDto?> GetByIdAsync(int courseId, int userId)
         {
-            foreach (var userId in dto.AddStudentIds)
+            var course = await _context.Courses
+                .Include(c => c.Users)
+                    .ThenInclude(uc => uc.User)
+                .FirstOrDefaultAsync(c => c.Id == courseId);
+
+            if (course == null) return null;
+
+            // Security Check: User must be enrolled to see details
+            var isEnrolled = course.Users.Any(uc => uc.UserId == userId);
+            if (!isEnrolled) return null;
+
+            return new CourseReadDto
             {
-                if (!course.Users.Any(uc => uc.UserId == userId && uc.Role == Role.Student))
-                {
-                    course.Users.Add(new UserCourse
-                    {
-                        UserId = userId,
-                        Role = Role.Student,
-                        CourseId = id
-                    });
-                }
-            }
+                Id = course.Id,
+                Name = course.Name,
+                Description = course.Description,
+                JoinCode = course.JoinCode,
+                Teachers = course.Users
+                    .Where(uc => uc.Role == Role.Teacher)
+                    .Select(uc => new CourseUserDto { Id = uc.UserId, Name = uc.User.Name })
+                    .ToList(),
+                Students = course.Users
+                    .Where(uc => uc.Role == Role.Student)
+                    .Select(uc => new CourseUserDto { Id = uc.UserId, Name = uc.User.Name })
+                    .ToList()
+            };
         }
 
-        if (dto.AddTeacherIds != null)
+        public async Task<IEnumerable<UserCourse>> GetUsersForCourseAsync(int courseId, int userId)
         {
-            foreach (var userId in dto.AddTeacherIds)
+            // Security Check: Only course members can see the user list
+            var isMember = await _context.UserCourses
+                .AnyAsync(uc => uc.CourseId == courseId && uc.UserId == userId);
+
+            if (!isMember) return Enumerable.Empty<UserCourse>();
+
+            return await _context.UserCourses
+                .Include(uc => uc.User)
+                .Where(uc => uc.CourseId == courseId)
+                .ToListAsync();
+        }
+
+        public async Task<Course> CreateAsync(CreateCourseDto dto, int teacherId)
+        {
+            var course = new Course
             {
-                if (!course.Users.Any(uc => uc.UserId == userId && uc.Role == Role.Teacher))
-                {
-                    course.Users.Add(new UserCourse
-                    {
-                        UserId = userId,
-                        Role = Role.Teacher,
-                        CourseId = id
-                    });
-                }
-            }
+                Name = dto.Name,
+                Description = dto.Description,
+                JoinCode = Guid.NewGuid().ToString().Substring(0, 8).ToUpper()
+            };
+
+            _context.Courses.Add(course);
+            await _context.SaveChangesAsync();
+
+            // Automatically add the creator as the Teacher
+            _context.UserCourses.Add(new UserCourse
+            {
+                UserId = teacherId,
+                CourseId = course.Id,
+                Role = Role.Teacher
+            });
+
+            await _context.SaveChangesAsync();
+            return course;
         }
 
-        await _context.SaveChangesAsync();
-        return course;
-    }
-
-    public async Task<bool> DeleteAsync(int id)
-    {
-        var course = await _context.Courses
-            .Include(c => c.Users)
-            .FirstOrDefaultAsync(c => c.Id == id);
-
-        if (course == null)
-            return false;
-
-        var assignments = _context.Assignments.Where(a => a.CourseId == id);
-        _context.Assignments.RemoveRange(assignments);
-
-        _context.UserCourses.RemoveRange(course.Users);
-        _context.Courses.Remove(course);
-
-        await _context.SaveChangesAsync();
-        return true;
-    }
-    public async Task<bool> JoinCourseAsync(string joinCode, int userId)
-    {
-        var course = await _context.Courses
-            .FirstOrDefaultAsync(c => c.JoinCode == joinCode);
-
-        if (course == null)
-            return false;
-        
-        var alreadyJoined = await _context.UserCourses
-            .AnyAsync(uc => uc.CourseId == course.Id && uc.UserId == userId);
-
-        if (alreadyJoined)
-            return false;
-        
-        _context.UserCourses.Add(new UserCourse
+        public async Task<Course?> UpdateAsync(int id, UpdateCourseDto dto)
         {
-            CourseId = course.Id,
-            UserId = userId,
-            Role = Role.Student
-        });
+            var course = await _context.Courses.FindAsync(id);
+            if (course == null) return null;
 
-        await _context.SaveChangesAsync();
-        return true;
-    }
+            course.Name = dto.Name;
+            course.Description = dto.Description;
 
-    public async Task<bool> LeaveCourseAsync(int courseId, int userId)
-    {
-        var userCourse = await _context.UserCourses
-            .FirstOrDefaultAsync(uc => uc.CourseId == courseId && uc.UserId == userId);
+            await _context.SaveChangesAsync();
+            return course;
+        }
 
-        if (userCourse == null)
-            return false;
+        public async Task<bool> DeleteAsync(int id)
+        {
+            var course = await _context.Courses.FindAsync(id);
+            if (course == null) return false;
 
-        _context.UserCourses.Remove(userCourse);
-        await _context.SaveChangesAsync();
-        return true;
+            _context.Courses.Remove(course);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> JoinCourseAsync(string joinCode, int userId)
+        {
+            var course = await _context.Courses
+                .FirstOrDefaultAsync(c => c.JoinCode == joinCode);
+
+            if (course == null) return false;
+
+            var exists = await _context.UserCourses
+                .AnyAsync(uc => uc.CourseId == course.Id && uc.UserId == userId);
+            if (exists) return false;
+
+            _context.UserCourses.Add(new UserCourse
+            {
+                UserId = userId,
+                CourseId = course.Id,
+                Role = Role.Student
+            });
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> LeaveCourseAsync(int courseId, int userId)
+        {
+            var userCourse = await _context.UserCourses
+                .FirstOrDefaultAsync(uc => uc.CourseId == courseId && uc.UserId == userId);
+
+            if (userCourse == null) return false;
+
+            _context.UserCourses.Remove(userCourse);
+            await _context.SaveChangesAsync();
+            return true;
+        }
     }
 }

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Purrfect_Learnings.Repositories;
+using System.Security.Claims;
 using Purrfect_Learnings.DTOs;
 using Purrfect_Learnings.Models;
 using System.Threading.Tasks;
@@ -18,121 +19,73 @@ public class AssignmentController : ControllerBase
     {
         _repository = repository;
     }
+    
+    private int GetUserId() => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+    private string GetUserRole() => User.FindFirstValue(ClaimTypes.Role)!;
 
-    // GET: api/assignments
-    [HttpGet]
-    [AllowAnonymous]
-    public async Task<IActionResult> GetAll()
-    {
-        var assignments = await _repository.GetAllAsync();
-        return Ok(assignments);
-    }
-
-    // GET: api/assignments/{id}
     [HttpGet("{id}")]
-    [AllowAnonymous]
     public async Task<IActionResult> GetById(int id)
     {
-        var assignment = await _repository.GetByIdAsync(id);
-        if (assignment == null)
-            return NotFound();
+        var currentUserId = GetUserId();
+        var userRole = GetUserRole();
 
-        return Ok(assignment);
+        // Pass security context to the repository
+        var result = await _repository.GetByIdAsync(id, currentUserId, userRole);
+        
+        if (result == null) 
+            return NotFound("Assignment not found or access denied.");
+            
+        return Ok(result);
     }
 
-    // GET: api/assignments/course/{courseId}
-    [HttpGet("course/{courseId}")]
-    [AllowAnonymous]
-    public async Task<IActionResult> GetByCourseId(int courseId)
-    {
-        var assignments = await _repository.GetByCourseIdAsync(courseId);
-        return Ok(assignments);
-    }
-
-    // GET: api/assignments/user/{userId}
-    [HttpGet("user/{userId}")]
-    [Authorize(Roles = "Teacher,Admin")]
-    public async Task<IActionResult> GetByUserId(int userId)
-    {
-        var assignments = await _repository.GetByUserIdAsync(userId);
-        return Ok(assignments);
-    }
-
-    // POST: api/assignments
-    [HttpPost]
-    [Authorize(Roles = "Teacher")]
-    public async Task<IActionResult> Create([FromBody] CreateAssignmentDto dto)
-    {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
-
-        var assignment = new Assignment
-        {
-            AssignmentName = dto.AssignmentName,
-            AssignmentDescription = dto.AssignmentDescription,
-            CourseId = dto.CourseId,
-            DueDate = dto.DueDate
-        };
-
-        var created = await _repository.CreateAsync(assignment);
-
-        return CreatedAtAction(
-            nameof(GetById),
-            new { id = created.AssignmentId },
-            created
-        );
-    }
-
-    // PUT: api/assignments/{id}
     [HttpPut("{id}")]
     [Authorize(Roles = "Teacher")]
-    public async Task<IActionResult> Update(
-        int id,
-        [FromBody] UpdateAssignmentDto dto)
+    public async Task<IActionResult> Update(int id, [FromBody] UpdateAssignmentDto dto)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
+        if (!ModelState.IsValid) return BadRequest(ModelState);
 
         var updated = await _repository.UpdateAsync(
             id,
             dto.AssignmentName,
-            dto.AssignmentDescription
+            dto.AssignmentDescription,
+            dto.AddUserIds ?? new List<int>(),
+            dto.RemoveUserIds ?? new List<int>()
         );
 
-        if (updated == null)
-            return NotFound();
-
-        return Ok(updated);
+        return updated == null ? NotFound() : Ok(updated);
     }
 
-    // PUT: api/assignments/{assignmentId}/grade
-    [HttpPut("{assignmentId}/grade")]
+    [HttpGet("course/{courseId}")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetByCourseId(int courseId) => Ok(await _repository.GetByCourseIdAsync(courseId));
+
+    [HttpGet("user/me")]
+    public async Task<IActionResult> GetMyAssignments() => Ok(await _repository.GetByUserIdAsync(GetUserId()));
+
+    [HttpPost]
     [Authorize(Roles = "Teacher")]
-    public async Task<IActionResult> GradeAssignment(
-        int assignmentId,
-        [FromBody] GradeAssignmentDto dto)
+    public async Task<IActionResult> Create([FromBody] CreateAssignmentDto dto)
     {
-        var success = await _repository.GradeAsync(
-            assignmentId,
-            dto.UserId,
-            dto.Grade
-        );
-
-        if (!success)
-            return NotFound();
-
-        return Ok();
+        var a = new Assignment { 
+            AssignmentName = dto.AssignmentName, 
+            AssignmentDescription = dto.AssignmentDescription, 
+            CourseId = dto.CourseId, 
+            DueDate = dto.DueDate,
+            Created = DateTime.UtcNow,
+            Updated = DateTime.UtcNow
+        };
+        return Ok(await _repository.CreateAsync(a));
     }
 
-    // DELETE: api/assignments/{id}
     [HttpDelete("{id}")]
     [Authorize(Roles = "Teacher")]
-    public async Task<IActionResult> Delete(int id)
-    {
-        var success = await _repository.DeleteAsync(id);
-        if (!success)
-            return NotFound();
+    public async Task<IActionResult> Delete(int id) => await _repository.DeleteAsync(id) ? NoContent() : NotFound();
 
-        return NoContent();
+    [HttpPut("{assignmentId}/grade")]
+    [Authorize(Roles = "Teacher")]
+    public async Task<IActionResult> GradeAssignment(int assignmentId, [FromBody] GradeAssignmentDto dto)
+    {
+        var success = await _repository.GradeAsync(assignmentId, dto.UserId, dto.Grade);
+        return success ? Ok() : NotFound();
     }
 }

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -17,161 +18,105 @@ namespace Purrfect_Learnings.Repositories
             _context = context;
         }
 
-        // CREATE
-        public async Task<Assignment> CreateAsync(Assignment assignment)
+        private AssignmentDto MapToDto(Assignment a)
         {
-            _context.Assignments.Add(assignment);
-            await _context.SaveChangesAsync();
-            return assignment;
-        }
-
-        // UPDATE (name + description)
-        public async Task<Assignment?> UpdateAsync(
-            int assignmentId,
-            string newTitle,
-            string? newDescription = null)
-        {
-            var assignment = await _context.Assignments
-                .FirstOrDefaultAsync(a => a.AssignmentId == assignmentId);
-
-            if (assignment == null)
-                return null;
-
-            assignment.AssignmentName = newTitle;
-
-            if (newDescription != null)
-                assignment.AssignmentDescription = newDescription;
-
-            assignment.Updated = DateTime.UtcNow;
-
-            await _context.SaveChangesAsync();
-            return assignment;
-        }
-
-        // DELETE
-        public async Task<bool> DeleteAsync(int assignmentId)
-        {
-            var assignment = await _context.Assignments
-                .Include(a => a.AssignmentUsers)
-                .FirstOrDefaultAsync(a => a.AssignmentId == assignmentId);
-
-            if (assignment == null)
-                return false;
-
-            _context.AssignmentUsers.RemoveRange(assignment.AssignmentUsers);
-            _context.Assignments.Remove(assignment);
-
-            await _context.SaveChangesAsync();
-            return true;
-        }
-
-        // GET ALL
-        public async Task<List<AssignmentDto>> GetAllAsync()
-        {
-            var assignments = await _context.Assignments
-                .Include(a => a.AssignmentUsers)
-                .ToListAsync();
-
-            return assignments.Select(a => new AssignmentDto
+            return new AssignmentDto
             {
                 AssignmentId = a.AssignmentId,
                 AssignmentName = a.AssignmentName,
-                AssignmentDescription = a.AssignmentDescription,
+                AssignmentDescription = a.AssignmentDescription ?? string.Empty,
                 CourseId = a.CourseId,
                 Created = a.Created,
                 Updated = a.Updated,
                 DueDate = a.DueDate,
-                Users = a.AssignmentUsers.Select(au => new AssignmentUserDto
+                Users = a.AssignmentUsers?.Select(au => new AssignmentUserDto
                 {
                     AssignmentId = au.AssignmentId,
                     UserId = au.UserId,
                     AssignedAt = au.AssignedAt,
                     SubmittedAt = au.SubmittedAt,
                     Grade = au.Grade
-                }).ToList()
-            }).ToList();
-        }
-
-        // GET BY ID
-        public async Task<AssignmentDto?> GetByIdAsync(int assignmentId)
-        {
-            var assignment = await _context.Assignments
-                .Include(a => a.AssignmentUsers)
-                .FirstOrDefaultAsync(a => a.AssignmentId == assignmentId);
-
-            if (assignment == null)
-                return null;
-
-            return new AssignmentDto
-            {
-                AssignmentId = assignment.AssignmentId,
-                AssignmentName = assignment.AssignmentName,
-                AssignmentDescription = assignment.AssignmentDescription,
-                CourseId = assignment.CourseId,
-                Created = assignment.Created,
-                Updated = assignment.Updated,
-                DueDate = assignment.DueDate,
-                Users = assignment.AssignmentUsers.Select(au => new AssignmentUserDto
-                {
-                    AssignmentId = au.AssignmentId,
-                    UserId = au.UserId,
-                    AssignedAt = au.AssignedAt,
-                    SubmittedAt = au.SubmittedAt,
-                    Grade = au.Grade
-                }).ToList()
+                }).ToList() ?? new List<AssignmentUserDto>()
             };
         }
 
-        // GRADE ASSIGNMENT
-        public async Task<bool> GradeAsync(
-            int assignmentId,
-            int userId,
-            decimal grade)
+        public async Task<AssignmentDto> CreateAsync(Assignment assignment)
         {
-            var assignmentUser = await _context.AssignmentUsers
-                .FirstOrDefaultAsync(au =>
-                    au.AssignmentId == assignmentId &&
-                    au.UserId == userId);
+            _context.Assignments.Add(assignment);
+            await _context.SaveChangesAsync();
+            return MapToDto(assignment);
+        }
 
-            if (assignmentUser == null)
-                return false;
+        public async Task<AssignmentDto?> UpdateAsync(
+            int assignmentId,
+            string? newTitle,
+            string? newDescription,
+            List<int> addUserIds,
+            List<int> removeUserIds)
+        {
+            var assignment = await _context.Assignments
+                .Include(a => a.AssignmentUsers)
+                .FirstOrDefaultAsync(a => a.AssignmentId == assignmentId);
 
-            assignmentUser.Grade = grade;
-            assignmentUser.SubmittedAt ??= DateTime.UtcNow;
+            if (assignment == null) return null;
+
+            if (!string.IsNullOrWhiteSpace(newTitle))
+                assignment.AssignmentName = newTitle;
+
+            assignment.AssignmentDescription = newDescription ?? string.Empty;
+            assignment.Updated = DateTime.UtcNow;
+
+            foreach (var userId in addUserIds.Distinct())
+            {
+                if (!assignment.AssignmentUsers.Any(au => au.UserId == userId))
+                {
+                    assignment.AssignmentUsers.Add(new AssignmentUser
+                    {
+                        AssignmentId = assignmentId,
+                        UserId = userId,
+                        AssignedAt = DateTime.UtcNow
+                    });
+                }
+            }
+
+            var usersToRemove = assignment.AssignmentUsers
+                .Where(au => removeUserIds.Contains(au.UserId))
+                .ToList();
+
+            foreach (var user in usersToRemove)
+            {
+                _context.AssignmentUsers.Remove(user);
+            }
 
             await _context.SaveChangesAsync();
-            return true;
+            return MapToDto(assignment);
         }
 
-        // GET BY COURSE ID
-        public async Task<List<AssignmentDto>> GetByCourseIdAsync(int courseId)
+        // NEW: Security-aware GetById
+        public async Task<AssignmentDto?> GetByIdAsync(int assignmentId, int currentUserId, string userRole)
         {
-            var assignments = await _context.Assignments
-                .Where(a => a.CourseId == courseId)
+            var assignment = await _context.Assignments
+                .Include(a => a.Course) // Needed to check Course.TeacherId
                 .Include(a => a.AssignmentUsers)
-                .ToListAsync();
+                .FirstOrDefaultAsync(a => a.AssignmentId == assignmentId);
 
-            return assignments.Select(a => new AssignmentDto
-            {
-                AssignmentId = a.AssignmentId,
-                AssignmentName = a.AssignmentName,
-                AssignmentDescription = a.AssignmentDescription,
-                CourseId = a.CourseId,
-                Created = a.Created,
-                Updated = a.Updated,
-                DueDate = a.DueDate,
-                Users = a.AssignmentUsers.Select(au => new AssignmentUserDto
-                {
-                    AssignmentId = au.AssignmentId,
-                    UserId = au.UserId,
-                    AssignedAt = au.AssignedAt,
-                    SubmittedAt = au.SubmittedAt,
-                    Grade = au.Grade
-                }).ToList()
-            }).ToList();
+            if (assignment == null) return null;
+
+            // Logic: Is Teacher of the course OR is a student assigned to it
+            bool isTeacher = userRole == "Teacher";
+            bool isAssigned = assignment.AssignmentUsers.Any(au => au.UserId == currentUserId);
+
+            if (!isTeacher && !isAssigned) return null;
+
+            return MapToDto(assignment);
         }
 
-        // GET BY USER ID
+        public async Task<List<AssignmentDto>> GetAllAsync() => 
+            (await _context.Assignments.Include(a => a.AssignmentUsers).ToListAsync()).Select(MapToDto).ToList();
+
+        public async Task<List<AssignmentDto>> GetByCourseIdAsync(int courseId) => 
+            (await _context.Assignments.Where(a => a.CourseId == courseId).Include(a => a.AssignmentUsers).ToListAsync()).Select(MapToDto).ToList();
+
         public async Task<List<AssignmentDto>> GetByUserIdAsync(int userId)
         {
             var assignments = await _context.AssignmentUsers
@@ -181,25 +126,26 @@ namespace Purrfect_Learnings.Repositories
                 .Select(au => au.Assignment)
                 .Distinct()
                 .ToListAsync();
+            return assignments.Select(MapToDto).ToList();
+        }
 
-            return assignments.Select(a => new AssignmentDto
-            {
-                AssignmentId = a.AssignmentId,
-                AssignmentName = a.AssignmentName,
-                AssignmentDescription = a.AssignmentDescription,
-                CourseId = a.CourseId,
-                Created = a.Created,
-                Updated = a.Updated,
-                DueDate = a.DueDate,
-                Users = a.AssignmentUsers.Select(au => new AssignmentUserDto
-                {
-                    AssignmentId = au.AssignmentId,
-                    UserId = au.UserId,
-                    AssignedAt = au.AssignedAt,
-                    SubmittedAt = au.SubmittedAt,
-                    Grade = au.Grade
-                }).ToList()
-            }).ToList();
+        public async Task<bool> GradeAsync(int assignmentId, int userId, decimal grade)
+        {
+            var entry = await _context.AssignmentUsers.FirstOrDefaultAsync(au => au.AssignmentId == assignmentId && au.UserId == userId);
+            if (entry == null) return false;
+            entry.Grade = grade;
+            entry.SubmittedAt ??= DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> DeleteAsync(int id)
+        {
+            var a = await _context.Assignments.FindAsync(id);
+            if (a == null) return false;
+            _context.Assignments.Remove(a);
+            await _context.SaveChangesAsync();
+            return true;
         }
     }
 }

@@ -19,6 +19,7 @@ import NotFound from "../pages/errors/NotFound";
 import CreateClass from "../pages/CreateClass";
 import TeacherClassPage from "../pages/TeacherClassPage.tsx";
 import TeacherAssignmentPage from "../pages/TeacherAssignment.tsx";
+import MyWork from "../pages/MyWork.tsx";
 
 type Role = "Admin" | "Teacher" | "Student";
 
@@ -198,6 +199,17 @@ export default function AppRoutes() {
                     <RequireAuth>
                         <ConditionalLayout>
                             <BadgesPage />
+                        </ConditionalLayout>
+                    </RequireAuth>
+                }
+            />
+
+            <Route
+                path="/my-work"
+                element={
+                    <RequireAuth allowedRoles={["Student"]}>
+                        <ConditionalLayout>
+                            <MyWork />
                         </ConditionalLayout>
                     </RequireAuth>
                 }

@@ -44,8 +44,14 @@ namespace Purrfect_Learnings.DTOs
     // For updating an assignment (PUT)
     public class UpdateAssignmentDto
     {
-        public string AssignmentName { get; set; } = string.Empty;
-        public string AssignmentDescription { get; set; } = string.Empty;
+        public string? AssignmentName { get; set; } = string.Empty;
+        public string? AssignmentDescription { get; set; } = string.Empty;
+
+        // Users to be assigned to this assignment
+        public List<int> AddUserIds { get; set; } = new();
+
+        // Users to be unassigned from this assignment
+        public List<int> RemoveUserIds { get; set; } = new();
     }
 
     // For grading a student's assignment (PUT /grade)

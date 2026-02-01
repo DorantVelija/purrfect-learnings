@@ -59,6 +59,7 @@ export default function Sidebar() {
                     <SidebarLink to="/dashboard">Dashboard</SidebarLink>
                     <SidebarLink to="/profile">Profile</SidebarLink>
                     <SidebarLink to="/badges">Badges</SidebarLink>
+                    <SidebarLink to="/my-work">My Work</SidebarLink>
                 </nav>
             </div>
         </aside>
