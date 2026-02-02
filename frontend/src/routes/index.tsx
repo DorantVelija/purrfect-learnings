@@ -20,6 +20,7 @@ import CreateClass from "../pages/CreateClass";
 import TeacherClassPage from "../pages/TeacherClassPage.tsx";
 import TeacherAssignmentPage from "../pages/TeacherAssignment.tsx";
 import MyWork from "../pages/MyWork.tsx";
+import LeaderboardPage from "../pages/LeaderboardPage.tsx";
 
 type Role = "Admin" | "Teacher" | "Student";
 
@@ -212,6 +213,15 @@ export default function AppRoutes() {
                             <MyWork />
                         </ConditionalLayout>
                     </RequireAuth>
+                }
+            />
+
+            <Route
+                path="/leaderboard"
+                element={
+                    <ConditionalLayout>
+                        <LeaderboardPage/>
+                    </ConditionalLayout>
                 }
             />
 

@@ -6,15 +6,20 @@ export default function Dashboard() {
     const [joinCode, setJoinCode] = useState("");
 
     const joinCourse = async () => {
-        if (!joinCode.trim()) return;
+        const trimmedCode = joinCode.trim();
+        if (!trimmedCode) return;
+
         try {
-            // Match your backend: POST /api/course/{id}/join?joinCode=XXX
-            await api.post(`/course/${joinCode.trim()}/join?joinCode=${joinCode.trim()}`);
+            // Updated to match your new Backend route: [HttpPost("join/{joinCode}")]
+            await api.post(`/course/join/${trimmedCode}`);
+
             setJoinCode("");
-            window.location.reload(); // simple refresh to reload classes
+            // Reloading is fine, but maybe just refresh the data if you have a state for it!
+            window.location.reload();
         } catch (e: any) {
             console.error("Join course error:", e);
-            alert("Failed to join course - invalid code or already joined");
+            // Better error message because it could be a ban!
+            alert(e.response?.data?.message || "Failed to join - invalid code, already joined, or you are banned 🚫");
         }
     };
 

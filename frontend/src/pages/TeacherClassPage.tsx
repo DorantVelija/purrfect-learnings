@@ -21,16 +21,16 @@ interface Course {
     students: Student[];
 }
 
-// Matching your JSON sample
 interface Assignment {
     assignmentId: number;
     assignmentName: string;
     assignmentDescription: string;
+    question: string;
     courseId: number;
     dueDate: string;
 }
 
-/* ---------- Small UI components ---------- */
+/* ---------- UI Components ---------- */
 
 function Tab({
                  label,
@@ -69,7 +69,7 @@ function AssignmentCard({
 
     return (
         <div
-            className="cursor-pointer bg-white rounded-2xl p-6 shadow-sm hover:shadow-md hover:scale-[1.01] transition"
+            className="cursor-pointer bg-white rounded-2xl p-6 shadow-sm hover:shadow-md hover:scale-[1.01] transition border border-gray-50"
             onClick={() => navigate(`/teacher/classes/${courseId}/assignment/${id}`)}
         >
             <h3 className="font-semibold text-gray-700">{title}</h3>
@@ -78,57 +78,100 @@ function AssignmentCard({
     );
 }
 
-function PersonCard({ name, role }: { name: string; role: string }) {
+function PersonCard({
+                        id,
+                        name,
+                        role,
+                        onKick,
+                        onBan
+                    }: {
+    id: number;
+    name: string;
+    role: string;
+    onKick?: (id: number) => void;
+    onBan?: (id: number) => void;
+}) {
     return (
-        <div className="bg-white rounded-2xl p-6 shadow-sm flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-200 to-indigo-200 flex items-center justify-center text-xl">
-                {role === "Teacher" ? "👨‍🏫" : "🐱"}
+        <div className="bg-white rounded-2xl p-6 shadow-sm flex items-center justify-between gap-4 group transition hover:shadow-md border border-transparent hover:border-pink-50">
+            <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-200 to-indigo-200 flex items-center justify-center text-xl">
+                    {role === "Teacher" ? "👨‍🏫" : "🐱"}
+                </div>
+                <div>
+                    <h3 className="font-semibold text-gray-700">{name}</h3>
+                    <p className="text-sm text-gray-500">{role}</p>
+                </div>
             </div>
-            <div>
-                <h3 className="font-semibold text-gray-700">{name}</h3>
-                <p className="text-sm text-gray-500">{role}</p>
-            </div>
+
+            {/* Admin Actions for Students */}
+            {role === "Student" && (
+                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                        onClick={() => onKick?.(id)}
+                        className="px-4 py-2 text-xs font-bold text-orange-600 bg-orange-50 rounded-full hover:bg-orange-100 transition active:scale-95"
+                    >
+                        Kick 🦶
+                    </button>
+                    <button
+                        onClick={() => onBan?.(id)}
+                        className="px-4 py-2 text-xs font-bold text-red-600 bg-red-50 rounded-full hover:bg-red-100 transition active:scale-95"
+                    >
+                        Ban 🚫
+                    </button>
+                </div>
+            )}
         </div>
     );
 }
 
-/* ---------- Page ---------- */
+/* ---------- Main Page ---------- */
 
 export default function TeacherClassPage() {
     const { id } = useParams<{ id: string }>();
     const [activeTab, setActiveTab] = useState<"stream" | "classwork" | "people" | "settings">("stream");
     const [course, setCourse] = useState<Course | null>(null);
-    const [assignments, setAssignments] = useState<Assignment[]>([]); // New state for list
+    const [assignments, setAssignments] = useState<Assignment[]>([]);
     const [loading, setLoading] = useState(true);
-    const [showPostBox, setShowPostBox] = useState(false);
+
     const [showAssignmentBox, setShowAssignmentBox] = useState(false);
+
+    // Assignment Form States
     const [assignmentTitle, setAssignmentTitle] = useState("");
     const [assignmentDescription, setAssignmentDescription] = useState("");
+    const [assignmentQuestion, setAssignmentQuestion] = useState("");
     const [assignmentDueDate, setAssignmentDueDate] = useState("");
 
     useEffect(() => {
         if (!id) return;
-
-        // Load Course
-        api.get<Course>(`/course/${id}`)
-            .then(res => setCourse(res.data))
-            .catch(err => console.error("Failed to load course:", err))
-            .finally(() => setLoading(false));
-
-        // Load Assignments - using 'id' from params
-        api.get<Assignment[]>(`/assignments/course/${id}`)
-            .then(res => setAssignments(res.data))
-            .catch(err => console.error("Failed to load assignments:", err));
-
+        loadData();
     }, [id]);
+
+    const loadData = async () => {
+        try {
+            const [courseRes, assignRes] = await Promise.all([
+                api.get<Course>(`/course/${id}`),
+                api.get<Assignment[]>(`/assignments/course/${id}`)
+            ]);
+            setCourse(courseRes.data);
+            setAssignments(assignRes.data);
+        } catch (err) {
+            console.error("Failed to load data:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const createAssignment = async () => {
         if (!id) return;
+        if (!assignmentTitle.trim() || !assignmentQuestion.trim()) {
+            return alert("Title and Question are required! 🐾");
+        }
 
         try {
             const res = await api.post<Assignment>(`/assignments`, {
                 assignmentName: assignmentTitle,
                 assignmentDescription: assignmentDescription,
+                question: assignmentQuestion,
                 courseId: Number(id),
                 dueDate: new Date(assignmentDueDate).toISOString(),
             });
@@ -136,65 +179,56 @@ export default function TeacherClassPage() {
             setAssignments(prev => [res.data, ...prev]);
             setAssignmentTitle("");
             setAssignmentDescription("");
+            setAssignmentQuestion("");
             setAssignmentDueDate("");
             setShowAssignmentBox(false);
+            alert("Assignment posted! 🚀");
         } catch (err) {
             console.error("Failed to create assignment:", err);
+            alert("Check console. Make sure database migrations are updated.");
         }
     };
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center min-h-[50vh]">
-                <div className="text-center">
-                    <div className="text-4xl mb-2">🐱</div>
-                    <p className="text-gray-600">Loading class...</p>
-                </div>
-            </div>
-        );
-    }
+    const handleKick = async (studentId: number) => {
+        if (!window.confirm("Kick this student? They can rejoin with the code. 🦶")) return;
+        try {
+            await api.delete(`/course/${id}/kick/${studentId}`);
+            loadData();
+            alert("Student removed from class.");
+        } catch (err) {
+            alert("Failed to kick student.");
+        }
+    };
 
-    if (!course) {
-        return (
-            <div className="flex items-center justify-center min-h-[50vh]">
-                <div className="text-center">
-                    <div className="text-4xl mb-2">😿</div>
-                    <p className="text-gray-600">Class not found</p>
-                </div>
-            </div>
-        );
-    }
+    const handleBan = async (studentId: number) => {
+        if (!window.confirm("BAN this student? They won't be able to rejoin! 🚫")) return;
+        try {
+            await api.post(`/course/${id}/ban/${studentId}`);
+            loadData();
+            alert("Student banned.");
+        } catch (err) {
+            alert("Failed to ban student.");
+        }
+    };
+
+    if (loading) return <div className="p-10 text-center animate-pulse">🐾 Loading class...</div>;
+    if (!course) return <div className="p-10 text-center">😿 Class not found</div>;
 
     return (
-        <div className="space-y-10">
-            {/* ===== Header (illustrated style) ===== */}
-            <div className="relative overflow-hidden rounded-[2.5rem] bg-[#fffaf5] p-10 shadow-sm">
-                {/* blobs */}
-                <div className="absolute -top-20 -left-20 w-72 h-72 bg-pink-200 rounded-full blur-[100px] opacity-60" />
-                <div className="absolute top-10 -right-24 w-80 h-80 bg-blue-200 rounded-full blur-[100px] opacity-60" />
-                <div className="absolute bottom-[-6rem] left-1/3 w-96 h-96 bg-yellow-100 rounded-full blur-[120px] opacity-70" />
-
-                {/* content */}
+        <div className="space-y-10 max-w-6xl mx-auto p-4">
+            {/* Header */}
+            <div className="relative overflow-hidden rounded-[2.5rem] bg-[#fffaf5] p-10 shadow-sm border border-orange-50">
                 <div className="relative z-10">
-                    <span className="inline-block mb-4 px-4 py-1 text-sm font-medium rounded-full bg-white/70 text-gray-600 shadow-sm">
-                        🐾 Class
-                    </span>
-
-                    <h1 className="text-5xl font-black tracking-tight text-gray-700">
-                        {course.name}
-                    </h1>
-
-                    <p className="mt-4 max-w-xl text-gray-600 leading-relaxed">
-                        {course.description || `Welcome to ${course.name} — a cozy place to learn, explore, and share your pawsome ideas.`}
-                    </p>
-
+                    <span className="inline-block mb-4 px-4 py-1 text-sm font-medium rounded-full bg-white/70 text-gray-600 shadow-sm">🐾 Class</span>
+                    <h1 className="text-5xl font-black tracking-tight text-gray-700">{course.name}</h1>
+                    <p className="mt-4 max-w-xl text-gray-600 leading-relaxed">{course.description || "Welcome to class!"}</p>
                     <div className="mt-4 inline-block px-4 py-2 rounded-full bg-white/70 text-sm font-medium text-gray-700 shadow-sm">
                         Join Code: <span className="font-bold text-pink-500">{course.joinCode}</span>
                     </div>
                 </div>
             </div>
 
-            {/* ===== Tabs ===== */}
+            {/* Tabs */}
             <div className="flex gap-8 border-b border-gray-200">
                 <Tab label="Stream" active={activeTab === "stream"} onClick={() => setActiveTab("stream")} />
                 <Tab label="Classwork" active={activeTab === "classwork"} onClick={() => setActiveTab("classwork")} />
@@ -202,41 +236,9 @@ export default function TeacherClassPage() {
                 <Tab label="Settings" active={activeTab === "settings"} onClick={() => setActiveTab("settings")} />
             </div>
 
-            {/* ===== Content ===== */}
             <div className="space-y-4">
                 {activeTab === "stream" && (
-                    <>
-                        <div className="space-y-3">
-                            <button
-                                onClick={() => setShowPostBox(prev => !prev)}
-                                className="rounded-full border border-gray-200 px-5 py-3 text-sm font-semibold text-gray-600 bg-white hover:bg-gray-50 transition"
-                            >
-                                {showPostBox ? "Cancel post" : "Announce something to the class"}
-                            </button>
-
-                            {showPostBox && (
-                                <div className="flex flex-col gap-2">
-                                    <input
-                                        type="text"
-                                        className="mt-1 w-full rounded-2xl border border-gray-200 px-5 py-3 text-gray-700 bg-gray-50"
-                                        placeholder="Title"
-                                    />
-
-                                    <textarea
-                                        className="mt-1 w-full rounded-2xl border border-gray-200 px-5 py-3 text-gray-700 bg-gray-50 resize-none"
-                                        placeholder="Description"
-                                    />
-
-                                    <button
-                                        className="self-start rounded-full bg-gradient-to-r from-pink-300 to-indigo-200 px-6 py-3 text-sm font-semibold text-white shadow-md hover:shadow-lg hover:scale-[1.02] transition"
-                                    >
-                                        Post
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Assignments showing in stream */}
+                    <div className="space-y-4">
                         {assignments.map(asgn => (
                             <AssignmentCard
                                 key={asgn.assignmentId}
@@ -245,111 +247,94 @@ export default function TeacherClassPage() {
                                 due={new Date(asgn.dueDate).toLocaleDateString()}
                             />
                         ))}
-                    </>
+                    </div>
                 )}
 
                 {activeTab === "classwork" && (
-                    <>
-                        <div className="space-y-3">
-                            <button
-                                onClick={() => setShowAssignmentBox(prev => !prev)}
-                                className="rounded-full border border-gray-200 px-5 py-3 text-sm font-semibold text-gray-600 bg-white hover:bg-gray-50 transition"
-                            >
-                                {showAssignmentBox ? "Cancel assignment" : "Create an assignment"}
-                            </button>
-
-                            {showAssignmentBox && (
-                                <div className="flex flex-col gap-2">
-                                    <input
-                                        type="text"
-                                        value={assignmentTitle}
-                                        onChange={e => setAssignmentTitle(e.target.value)}
-                                        className="mt-1 w-full rounded-2xl border border-gray-200 px-5 py-3 text-gray-700 bg-gray-50"
-                                        placeholder="Assignment title"
-                                    />
-
-                                    <textarea
-                                        value={assignmentDescription}
-                                        onChange={e => setAssignmentDescription(e.target.value)}
-                                        className="mt-1 w-full rounded-2xl border border-gray-200 px-5 py-3 text-gray-700 bg-gray-50 resize-none"
-                                        placeholder="Assignment description"
-                                    />
-
-                                    <input
-                                        type="date"
-                                        value={assignmentDueDate}
-                                        onChange={e => setAssignmentDueDate(e.target.value)}
-                                        className="mt-1 w-full rounded-2xl border border-gray-200 px-5 py-3 text-gray-700 bg-gray-50"
-                                    />
-
-                                    <button
-                                        onClick={createAssignment}
-                                        className="self-start rounded-full bg-gradient-to-r from-pink-300 to-indigo-200 px-6 py-3 text-sm font-semibold text-white shadow-md hover:shadow-lg hover:scale-[1.02] transition"
-                                    >
-                                        Post assignment
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                        <div className="space-y-4">
-                            {assignments.length > 0 ? (
-                                assignments.map(asgn => (
-                                    <AssignmentCard
-                                        key={asgn.assignmentId}
-                                        id={asgn.assignmentId.toString()}
-                                        title={asgn.assignmentName}
-                                        due={new Date(asgn.dueDate).toLocaleDateString()}
-                                    />
-                                ))
-                            ) : (
-                                <div className="text-center py-10 text-gray-500">
-                                    📚 No assignments yet!
-                                </div>
-                            )}
-                        </div>
-                    </>
-                )}
-
-                {activeTab === "people" && (
                     <div className="space-y-6">
-                        {/* Teachers */}
-                        {course.teachers.length > 0 && (
-                            <div>
-                                <h2 className="text-lg font-bold text-gray-700 mb-4">
-                                    Teachers ({course.teachers.length})
-                                </h2>
-                                <div className="space-y-3">
-                                    {course.teachers.map(teacher => (
-                                        <PersonCard
-                                            key={teacher.id}
-                                            name={teacher.name}
-                                            role="Teacher"
-                                        />
-                                    ))}
-                                </div>
+                        <button
+                            onClick={() => setShowAssignmentBox(!showAssignmentBox)}
+                            className="rounded-full border border-gray-200 px-6 py-3 text-sm font-bold text-gray-600 bg-white hover:bg-gray-50 transition shadow-sm"
+                        >
+                            {showAssignmentBox ? "Cancel" : "➕ Create Assignment"}
+                        </button>
+
+                        {showAssignmentBox && (
+                            <div className="flex flex-col gap-3 bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm">
+                                <input
+                                    type="text"
+                                    value={assignmentTitle}
+                                    onChange={e => setAssignmentTitle(e.target.value)}
+                                    className="w-full rounded-2xl border border-gray-100 px-5 py-3 bg-gray-50 outline-none"
+                                    placeholder="Assignment Title"
+                                />
+                                <textarea
+                                    value={assignmentQuestion}
+                                    onChange={e => setAssignmentQuestion(e.target.value)}
+                                    className="w-full rounded-2xl border border-indigo-100 px-5 py-4 bg-indigo-50 outline-none transition"
+                                    placeholder="The Prompt (Question)"
+                                    rows={3}
+                                />
+                                <textarea
+                                    value={assignmentDescription}
+                                    onChange={e => setAssignmentDescription(e.target.value)}
+                                    className="w-full rounded-2xl border border-gray-100 px-5 py-3 bg-gray-50 outline-none"
+                                    placeholder="Extra Instructions"
+                                    rows={2}
+                                />
+                                <input
+                                    type="date"
+                                    value={assignmentDueDate}
+                                    onChange={e => setAssignmentDueDate(e.target.value)}
+                                    className="w-full rounded-2xl border border-gray-100 px-5 py-3 bg-gray-50"
+                                />
+                                <button
+                                    onClick={createAssignment}
+                                    className="self-end rounded-full bg-gradient-to-r from-pink-400 to-indigo-400 px-8 py-3 text-white font-bold shadow-md hover:scale-[1.02] transition"
+                                >
+                                    Post Assignment 🚀
+                                </button>
                             </div>
                         )}
 
-                        {/* Students */}
+                        <div className="space-y-4">
+                            {assignments.map(asgn => (
+                                <AssignmentCard
+                                    key={asgn.assignmentId}
+                                    id={asgn.assignmentId.toString()}
+                                    title={asgn.assignmentName}
+                                    due={new Date(asgn.dueDate).toLocaleDateString()}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === "people" && (
+                    <div className="space-y-8">
                         <div>
-                            <h2 className="text-lg font-bold text-gray-700 mb-4">
-                                Students ({course.students.length})
-                            </h2>
+                            <h2 className="text-lg font-bold text-gray-700 mb-4 ml-2">Teachers ({course.teachers.length})</h2>
                             <div className="space-y-3">
-                                {course.students.map(student => (
+                                {course.teachers.map(t => (
+                                    <PersonCard key={t.id} id={t.id} name={t.name} role="Teacher" />
+                                ))}
+                            </div>
+                        </div>
+                        <div>
+                            <h2 className="text-lg font-bold text-gray-700 mb-4 ml-2">Students ({course.students.length})</h2>
+                            <div className="space-y-3">
+                                {course.students.map(s => (
                                     <PersonCard
-                                        key={student.id}
-                                        name={student.name}
+                                        key={s.id}
+                                        id={s.id}
+                                        name={s.name}
                                         role="Student"
+                                        onKick={handleKick}
+                                        onBan={handleBan}
                                     />
                                 ))}
                             </div>
                         </div>
-                    </div>
-                )}
-                {activeTab === "settings" && (
-                    <div className="bg-white rounded-2xl p-6 shadow-sm text-gray-600">
-                        ⚙️ Class settings coming soon
                     </div>
                 )}
             </div>

@@ -58,8 +58,9 @@ export default function Sidebar() {
                 <nav className="space-y-3">
                     <SidebarLink to="/dashboard">Dashboard</SidebarLink>
                     <SidebarLink to="/profile">Profile</SidebarLink>
-                    <SidebarLink to="/badges">Badges</SidebarLink>
                     <SidebarLink to="/my-work">My Work</SidebarLink>
+                    <SidebarLink to="/leaderboard">Leaderboard</SidebarLink>
+                    <SidebarLink to="/badges">Badges</SidebarLink>
                 </nav>
             </div>
         </aside>

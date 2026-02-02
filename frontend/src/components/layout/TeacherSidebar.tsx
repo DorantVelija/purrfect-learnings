@@ -58,6 +58,7 @@ export default function TeacherSidebar() {
                 <nav className="space-y-3">
                     <SidebarLink to="/dashboard">Dashboard</SidebarLink>
                     <SidebarLink to="/profile">Profile</SidebarLink>
+                    <SidebarLink to="/leaderboard">Leaderboard</SidebarLink>
                 </nav>
             </div>
         </aside>
